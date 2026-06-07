@@ -40,7 +40,7 @@ export function Restaurants() {
     <div className="min-h-screen bg-[#f7f5f0]">
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md border-b border-[#e3ede0] sticky top-0 z-10 shadow-[0_1px_12px_rgba(45,80,22,0.06)]">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="" className="h-9 w-auto object-contain" />
             <span className="font-black text-lg text-[#2D5016] tracking-tight">Floresta Já</span>
@@ -104,7 +104,7 @@ export function Restaurants() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-2xl mx-auto px-4 py-8">
         {/* Title */}
         <div className="mb-5 animate-fade-in-up">
           <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-[#2D5016] via-[#4a8526] to-[#6BA534] bg-clip-text text-transparent drop-shadow-sm">{title}</h1>
@@ -195,11 +195,11 @@ export function Restaurants() {
 
         {/* List */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="bg-white rounded-3xl shadow-sm overflow-hidden">
-                <div className="skeleton h-36 rounded-none" />
-                <div className="p-4 space-y-2.5">
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-2xl p-5 shadow-sm flex items-center gap-4">
+                <div className="skeleton w-16 h-16 shrink-0" />
+                <div className="flex-1 space-y-2.5">
                   <div className="skeleton h-4 rounded w-2/3" />
                   <div className="skeleton h-3 rounded w-full" />
                   <div className="skeleton h-3 rounded w-1/2" />
@@ -218,7 +218,7 @@ export function Restaurants() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="space-y-4">
             {filtered.map((restaurant, idx) => {
               const cat = getCategory(restaurant.category);
               const CatIcon = cat.icon;
@@ -227,62 +227,63 @@ export function Restaurants() {
                   key={restaurant.id}
                   to={`/restaurantes/${restaurant.id}`}
                   style={{ animationDelay: `${Math.min(idx, 8) * 45}ms` }}
-                  className="group block bg-white rounded-3xl shadow-[0_2px_16px_rgba(20,40,10,0.07)] card-hover animate-fade-in-up overflow-hidden"
+                  className="block bg-white rounded-3xl shadow-[0_2px_14px_rgba(20,40,10,0.06)] card-hover animate-fade-in-up border-2 border-transparent hover:border-[#cfe9ba] overflow-hidden"
                 >
-                  {/* Banner / imagem de capa */}
-                  <div className="relative h-36 overflow-hidden bg-gradient-to-br from-[#e8f5e0] to-[#cfe9ba]">
+                  <div className="flex items-center gap-4 p-4">
+                    {/* Logo quadrada */}
                     {restaurant.image_url ? (
                       <img
                         src={restaurant.image_url}
                         alt={restaurant.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-gray-100"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <CatIcon size={44} className="text-[#6BA534]/50" />
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#e8f5e0] to-[#d3ecc0] flex items-center justify-center shrink-0">
+                        <CatIcon size={28} className="text-[#6BA534]" />
                       </div>
                     )}
-                    {/* Gradiente para legibilidade */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                    {/* Status badge sobre a imagem */}
-                    <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold backdrop-blur-md ${
-                      restaurant.is_open_today
-                        ? 'bg-white/85 text-[#2D5016]'
-                        : 'bg-black/50 text-white'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${restaurant.is_open_today ? 'bg-[#6BA534] animate-pulse' : 'bg-red-400'}`} />
-                      {restaurant.is_open_today ? 'Aberto agora' : 'Fechado'}
-                    </span>
-                    {/* Categoria sobre a imagem */}
-                    <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 bg-white/90 backdrop-blur-md text-[#2D5016] text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full">
-                      <CatIcon size={11} /> {cat.label}
-                    </span>
-                  </div>
 
-                  {/* Conteúdo */}
-                  <div className="p-4">
-                    <h2 className="text-base font-black text-[#1a1a1a] truncate mb-1 group-hover:text-[#2D5016] transition-colors">{restaurant.name}</h2>
-                    {restaurant.description && (
-                      <p className="text-xs text-[#888] line-clamp-2 mb-3 leading-relaxed">{restaurant.description}</p>
-                    )}
+                    {/* Informações */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="min-w-0">
+                          <h2 className="text-base font-bold text-[#1a1a1a] truncate">{restaurant.name}</h2>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#6BA534] uppercase tracking-wide">
+                            <CatIcon size={11} /> {cat.label}
+                          </span>
+                        </div>
+                        <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          restaurant.is_open_today
+                            ? 'bg-[#e8f5e0] text-[#2D5016]'
+                            : 'bg-red-50 text-red-600'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${restaurant.is_open_today ? 'bg-[#6BA534]' : 'bg-red-400'}`} />
+                          {restaurant.is_open_today ? 'Aberto' : 'Fechado'}
+                        </span>
+                      </div>
 
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-3 border-t border-[#f0f2ec]">
-                      <span className="flex items-center gap-1 text-xs text-[#777] font-medium">
-                        <Clock size={12} className="text-[#6BA534]" />
-                        {formatTime(restaurant.open_time)}–{formatTime(restaurant.close_time)}
-                      </span>
-                      {restaurant.address && (
-                        <span className="flex items-center gap-1 text-xs text-[#777] font-medium truncate max-w-[140px]">
-                          <MapPin size={12} className="text-[#6BA534] shrink-0" />
-                          {restaurant.address}
-                        </span>
+                      {restaurant.description && (
+                        <p className="text-xs text-[#888] mb-2 line-clamp-1 mt-1">{restaurant.description}</p>
                       )}
-                      {restaurant.phone && (
-                        <span className="flex items-center gap-1 text-xs text-[#777] font-medium">
-                          <Phone size={12} className="text-[#6BA534]" />
-                          {restaurant.phone}
+
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        <span className="flex items-center gap-1 text-xs text-[#999]">
+                          <Clock size={11} className="text-[#6BA534]" />
+                          {formatTime(restaurant.open_time)} – {formatTime(restaurant.close_time)}
                         </span>
-                      )}
+                        {restaurant.address && (
+                          <span className="flex items-center gap-1 text-xs text-[#999] truncate max-w-[160px]">
+                            <MapPin size={11} className="text-[#6BA534] shrink-0" />
+                            {restaurant.address}
+                          </span>
+                        )}
+                        {restaurant.phone && (
+                          <span className="flex items-center gap-1 text-xs text-[#999]">
+                            <Phone size={11} className="text-[#6BA534]" />
+                            {restaurant.phone}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Link>
