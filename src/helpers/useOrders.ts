@@ -121,3 +121,51 @@ export async function createOrder(payload: {
   if (error) throw new Error(error.message);
   return data as Order;
 }
+
+// Hook para o CLIENTE acompanhar um pedido específico em tempo real
+export function useOrderTracking(orderId: string | null) {
+  const [order, setOrder] = useState<Order | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  const fetch = useCallback(async () => {
+    if (!orderId) { setIsLoading(false); return; }
+    setIsLoading(true);
+    const { data } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (data) setOrder(data as Order);
+    else setNotFound(true);
+    setIsLoading(false);
+  }, [orderId]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  // Realtime: atualiza assim que o restaurante mudar o status
+  useEffect(() => {
+    if (!orderId) return;
+    const channel = supabase
+      .channel(`order-tracking-${orderId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${orderId}`,
+      }, (payload) => {
+        setOrder(payload.new as Order);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [orderId]);
+
+  // Polling de segurança a cada 10s (garante atualização mesmo sem realtime)
+  useEffect(() => {
+    if (!orderId) return;
+    const interval = setInterval(() => { fetch(); }, 10000);
+    return () => clearInterval(interval);
+  }, [orderId, fetch]);
+
+  return { order, isLoading, notFound, refetch: fetch };
+}

@@ -9,6 +9,7 @@ import { Restaurants } from './pages/Restaurants';
 import { RestaurantDashboard } from './pages/RestaurantDashboard';
 import { RestaurantMenu } from './pages/RestaurantMenu';
 import { PaymentStatus } from './pages/PaymentStatus';
+import { OrderTracking } from './pages/OrderTracking';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/restaurantes/:id" element={<RestaurantMenu />} />
             <Route path="/meu-restaurante" element={<RestaurantDashboard />} />
             <Route path="/pedido-status" element={<PaymentStatus />} />
+            <Route path="/pedido/:id" element={<OrderTracking />} />
             {/* Rota coringa */}
             <Route path="*" element={<Navigate to="/restaurantes" replace />} />
           </Routes>

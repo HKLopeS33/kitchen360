@@ -90,9 +90,9 @@ Deno.serve(async (req) => {
         email: safeEmail,
       },
       back_urls: {
-        success: `${APP_URL}/pedido-status?status=sucesso&order=${orderNumber}`,
-        failure: `${APP_URL}/pedido-status?status=falha&order=${orderNumber}`,
-        pending: `${APP_URL}/pedido-status?status=pendente&order=${orderNumber}`,
+        success: `${APP_URL}/pedido-status?status=sucesso&order=${orderNumber}&orderId=${orderId}`,
+        failure: `${APP_URL}/pedido-status?status=falha&order=${orderNumber}&orderId=${orderId}`,
+        pending: `${APP_URL}/pedido-status?status=pendente&order=${orderNumber}&orderId=${orderId}`,
       },
       external_reference: String(orderNumber),
       notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,

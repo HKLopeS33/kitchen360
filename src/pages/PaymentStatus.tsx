@@ -1,18 +1,18 @@
 import { useSearchParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ArrowLeft, MapPin } from 'lucide-react';
 
 const config = {
   sucesso: {
     icon: <CheckCircle size={64} className="text-[#2D5016]" />,
     title: 'Pagamento aprovado!',
-    desc: 'Seu pedido foi confirmado e o restaurante já está preparando.',
+    desc: 'Seu pedido foi confirmado e o estabelecimento já está preparando.',
     bg: 'bg-[#e8f5e0]',
     color: 'text-[#2D5016]',
   },
   pendente: {
     icon: <Clock size={64} className="text-yellow-500" />,
     title: 'Pagamento pendente',
-    desc: 'Seu pagamento está sendo processado. Assim que confirmado, o restaurante iniciará o preparo.',
+    desc: 'Seu pagamento está sendo processado. Assim que confirmado, o estabelecimento iniciará o preparo.',
     bg: 'bg-yellow-50',
     color: 'text-yellow-700',
   },
@@ -29,6 +29,7 @@ export function PaymentStatus() {
   const [params] = useSearchParams();
   const status = (params.get('status') ?? 'falha') as keyof typeof config;
   const orderNum = params.get('order');
+  const orderId = params.get('orderId');
   const cfg = config[status] ?? config.falha;
 
   return (
@@ -40,10 +41,23 @@ export function PaymentStatus() {
           <p className="text-sm font-semibold text-[#555] mb-2">Pedido #{orderNum}</p>
         )}
         <p className="text-sm text-[#666] mb-8">{cfg.desc}</p>
-        <Link to="/restaurantes"
-          className="flex items-center justify-center gap-2 bg-[#2D5016] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#3d6b1e] transition-colors">
-          <ArrowLeft size={16} /> Voltar aos restaurantes
-        </Link>
+
+        <div className="space-y-3">
+          {orderId && (status === 'sucesso' || status === 'pendente') && (
+            <Link to={`/pedido/${orderId}`}
+              className="flex items-center justify-center gap-2 bg-[#2D5016] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#3d6b1e] transition-colors">
+              <MapPin size={16} /> Acompanhar pedido
+            </Link>
+          )}
+          <Link to="/restaurantes"
+            className={`flex items-center justify-center gap-2 font-semibold px-6 py-3 rounded-xl transition-colors ${
+              orderId && (status === 'sucesso' || status === 'pendente')
+                ? 'bg-white text-[#2D5016] hover:bg-gray-50'
+                : 'bg-[#2D5016] text-white hover:bg-[#3d6b1e]'
+            }`}>
+            <ArrowLeft size={16} /> Voltar aos estabelecimentos
+          </Link>
+        </div>
       </div>
     </div>
   );
