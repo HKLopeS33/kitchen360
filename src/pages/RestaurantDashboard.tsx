@@ -13,6 +13,7 @@ import { Button } from '../components/Button';
 import { ImageUpload } from '../components/ImageUpload';
 import { OrdersPanel } from '../components/OrdersPanel';
 import type { MenuItem } from '../lib/supabase';
+import { CATEGORIES, type Category } from '../lib/categories';
 
 type Tab = 'pedidos' | 'cardapio' | 'dados';
 
@@ -42,7 +43,7 @@ export function RestaurantDashboard() {
   const [form, setForm] = useState({
     name: '', description: '', phone: '', address: '',
     open_time: '08:00', close_time: '18:00', image_url: '', is_open_today: false,
-    mp_access_token: '',
+    mp_access_token: '', category: 'restaurante' as Category,
   });
   const [showToken, setShowToken] = useState(false);
 
@@ -58,6 +59,7 @@ export function RestaurantDashboard() {
         image_url: restaurant.image_url ?? '',
         is_open_today: restaurant.is_open_today,
         mp_access_token: restaurant.mp_access_token ?? '',
+        category: (restaurant.category as Category) ?? 'restaurante',
       });
     }
   }, [restaurant]);
@@ -113,7 +115,7 @@ export function RestaurantDashboard() {
     if (!form.name.trim()) { toast.error('Nome obrigatório'); return; }
     setSaving(true);
     try {
-      const payload = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, mp_access_token: form.mp_access_token.trim() || null };
+      const payload = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, mp_access_token: form.mp_access_token.trim() || null, category: form.category };
       if (restaurant) { await updateRestaurant(payload); toast.success('Dados atualizados!'); }
       else { await createRestaurant(payload); toast.success('Restaurante cadastrado!'); setTab('pedidos'); }
     } catch (err: any) { toast.error(err.message); }
@@ -139,7 +141,7 @@ export function RestaurantDashboard() {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/restaurantes" className="flex items-center gap-2 text-[#2D5016] font-bold text-lg">
-            <Leaf size={22} className="text-[#6BA534]" /> Cardápio Fitness
+            <Leaf size={22} className="text-[#6BA534]" /> Floresta Já
           </Link>
           <div className="flex items-center gap-3">
             {restaurant && (
@@ -196,10 +198,34 @@ export function RestaurantDashboard() {
           /* Primeiro acesso — ainda não tem restaurante cadastrado */
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h2 className="font-bold text-[#1a1a1a] mb-5 flex items-center gap-2">
-              <Store size={18} className="text-[#6BA534]" /> Cadastre seu restaurante
+              <Store size={18} className="text-[#6BA534]" /> Cadastre seu estabelecimento
             </h2>
             <form onSubmit={handleSave} className="space-y-4">
-              <InputField label="Nome do restaurante *" placeholder="Ex: Fit Grill Floresta" {...field('name')} required />
+              <div>
+                <label className="block text-sm font-semibold text-[#333] mb-2">Categoria *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {CATEGORIES.map(c => {
+                    const Icon = c.icon;
+                    const active = form.category === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, category: c.id }))}
+                        className={`flex items-center gap-2 px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                          active
+                            ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016]'
+                            : 'border-gray-200 bg-white text-[#666] hover:border-gray-300'
+                        }`}
+                      >
+                        <Icon size={17} className={active ? 'text-[#2D5016]' : 'text-[#aaa]'} />
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <InputField label="Nome do estabelecimento *" placeholder="Ex: Fit Grill Floresta" {...field('name')} required />
               <InputField label="Descrição" placeholder="Uma breve descrição" {...field('description')} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -337,9 +363,33 @@ export function RestaurantDashboard() {
             {tab === 'dados' && (
               <div className="bg-white rounded-2xl shadow-sm p-6">
                 <h2 className="font-bold text-[#1a1a1a] mb-5 flex items-center gap-2">
-                  <Settings size={18} className="text-[#6BA534]" /> Dados do restaurante
+                  <Settings size={18} className="text-[#6BA534]" /> Dados do estabelecimento
                 </h2>
                 <form onSubmit={handleSave} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-[#333] mb-2">Categoria *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {CATEGORIES.map(c => {
+                        const Icon = c.icon;
+                        const active = form.category === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, category: c.id }))}
+                            className={`flex items-center gap-2 px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                              active
+                                ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016]'
+                                : 'border-gray-200 bg-white text-[#666] hover:border-gray-300'
+                            }`}
+                          >
+                            <Icon size={17} className={active ? 'text-[#2D5016]' : 'text-[#aaa]'} />
+                            {c.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <InputField label="Nome *" placeholder="Ex: Fit Grill Floresta" {...field('name')} required />
                   <InputField label="Descrição" placeholder="Uma breve descrição" {...field('description')} />
                   <div className="grid grid-cols-2 gap-3">

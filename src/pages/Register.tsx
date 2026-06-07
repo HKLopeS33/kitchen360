@@ -42,7 +42,7 @@ export function Register() {
     <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <Link to="/" className="flex items-center justify-center gap-2 text-[#2D5016] font-bold text-xl mb-8">
-          <Leaf size={24} className="text-[#6BA534]" /> Cardápio Fitness
+          <Leaf size={24} className="text-[#6BA534]" /> Floresta Já
         </Link>
 
         <div className="bg-white rounded-2xl shadow-sm p-8">

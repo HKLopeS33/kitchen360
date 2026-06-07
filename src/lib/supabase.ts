@@ -34,6 +34,7 @@ export interface MenuItem {
 export interface Restaurant {
   id: string;
   owner_id: string;
+  category: string;
   name: string;
   description: string;
   phone: string;
