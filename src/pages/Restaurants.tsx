@@ -36,7 +36,7 @@ export function Restaurants() {
           </Link>
           <div className="flex items-center gap-3">
             {/* Carrinho com badge */}
-            {totalItems > 0 && (
+            {user?.role !== 'restaurant_owner' && totalItems > 0 && (
               <Link to="/cart" className="relative flex items-center gap-1.5 bg-[#2D5016] text-white text-sm font-semibold px-3 py-2 rounded-xl hover:bg-[#3d6b1e] transition-colors">
                 <ShoppingCart size={16} />
                 <span>{totalItems}</span>

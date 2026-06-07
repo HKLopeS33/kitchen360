@@ -34,6 +34,7 @@ export function Cart() {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) { toast.error('Faça login para finalizar o pedido'); navigate('/login'); return; }
+    if (user.role === 'restaurant_owner') { toast.error('Contas de estabelecimento não podem fazer pedidos.'); return; }
     if (!address.trim()) { toast.error('Informe o endereço de entrega'); return; }
     if (!restaurantId) { toast.error('Restaurante não identificado'); return; }
 
@@ -107,6 +108,19 @@ export function Cart() {
       setLoading(false);
     }
   };
+
+  if (user?.role === 'restaurant_owner') {
+    return (
+      <div className="min-h-screen bg-[#f7f5f0] flex flex-col items-center justify-center gap-4 px-4 text-center">
+        <ShoppingCart size={64} className="text-gray-200" />
+        <h2 className="text-2xl font-bold text-[#333]">Indisponível para estabelecimentos</h2>
+        <p className="text-[#888]">Contas de estabelecimento não podem fazer pedidos nem pagamentos. Use uma conta de cliente para comprar.</p>
+        <Link to="/restaurantes" className="mt-2 bg-[#2D5016] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#3d6b1e] transition-colors">
+          Voltar
+        </Link>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

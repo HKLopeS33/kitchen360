@@ -4,6 +4,7 @@ import { ArrowLeft, Clock, MapPin, Phone, ShoppingCart, Plus, Minus, AlertCircle
 import { toast } from 'sonner';
 import { supabase, type Restaurant, type MenuItem } from '../lib/supabase';
 import { useCart } from '../helpers/useCart';
+import { useAuth } from '../helpers/useAuth';
 import { useMenuItems } from '../helpers/useMenuItems';
 
 function formatTime(t: string) { return t?.slice(0, 5) ?? '--:--'; }
@@ -25,6 +26,8 @@ export function RestaurantMenu() {
 
   const { items: menuItems, isLoading: loadingMenu } = useMenuItems(id ?? null);
   const { items: cartItems, restaurantId, addItem, updateQty, totalItems, totalPrice } = useCart();
+  const { user } = useAuth();
+  const isOwner = user?.role === 'restaurant_owner';
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +40,10 @@ export function RestaurantMenu() {
   const getQty = (itemId: string) => cartItems.find(c => c.item.id === itemId)?.quantity ?? 0;
 
   const handleAdd = (item: MenuItem) => {
+    if (isOwner) {
+      toast.error('Contas de estabelecimento não podem fazer pedidos. Use uma conta de cliente.');
+      return;
+    }
     if (restaurantId && restaurantId !== item.restaurant_id) {
       toast('Seu carrinho tem itens de outro restaurante. Deseja limpar e adicionar este?', {
         action: {
@@ -79,7 +86,7 @@ export function RestaurantMenu() {
             <ArrowLeft size={22} />
           </button>
           <span className="font-bold text-[#1a1a1a] truncate flex-1">{restaurant.name}</span>
-          {totalItems > 0 && (
+          {!isOwner && totalItems > 0 && (
             <Link to="/cart" className="relative flex items-center gap-2 bg-[#2D5016] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#3d6b1e] transition-colors">
               <ShoppingCart size={16} />
               <span>{totalItems}</span>
@@ -155,7 +162,9 @@ export function RestaurantMenu() {
                           {item.description && <p className="text-xs text-[#888] mt-0.5 line-clamp-2">{item.description}</p>}
                           <div className="flex items-center justify-between mt-3">
                             <span className="font-black text-[#2D5016]">{formatPrice(item.price)}</span>
-                            {qty === 0 ? (
+                            {isOwner ? (
+                              <span className="text-xs text-[#bbb] italic">Conta de estabelecimento</span>
+                            ) : qty === 0 ? (
                               <button
                                 onClick={() => handleAdd(item)}
                                 disabled={!restaurant.is_open_today}
@@ -193,7 +202,7 @@ export function RestaurantMenu() {
       </main>
 
       {/* Floating cart bar */}
-      {totalItems > 0 && (
+      {!isOwner && totalItems > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-transparent pointer-events-none">
           <div className="max-w-2xl mx-auto pointer-events-auto">
             <Link
