@@ -6,6 +6,7 @@ import { useAuth } from '../helpers/useAuth';
 import { useCart } from '../helpers/useCart';
 import { CATEGORIES, getCategory, type Category } from '../lib/categories';
 import logo from '../assets/logo-icon.png';
+import { Footer } from '../components/Footer';
 
 function formatTime(time: string) {
   return time?.slice(0, 5) ?? '--:--';
@@ -352,6 +353,7 @@ export function Restaurants() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

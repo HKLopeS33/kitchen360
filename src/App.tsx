@@ -13,6 +13,7 @@ import { OrderTracking } from './pages/OrderTracking';
 import { ClientOrders } from './pages/ClientOrders';
 import { ClientAccount } from './pages/ClientAccount';
 import { PaymentWaiting } from './pages/PaymentWaiting';
+import { Info } from './pages/Info';
 
 export default function App() {
   return (
@@ -33,6 +34,11 @@ export default function App() {
             <Route path="/pagamento-pendente/:id" element={<PaymentWaiting />} />
             <Route path="/meus-pedidos" element={<ClientOrders />} />
             <Route path="/meus-dados" element={<ClientAccount />} />
+            <Route path="/ajuda" element={<Info />} />
+            <Route path="/suporte" element={<Info />} />
+            <Route path="/parcerias" element={<Info />} />
+            <Route path="/trabalhe-conosco" element={<Info />} />
+            <Route path="/privacidade" element={<Info />} />
             {/* Rota coringa */}
             <Route path="*" element={<Navigate to="/restaurantes" replace />} />
           </Routes>
