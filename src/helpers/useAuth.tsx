@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // Ouve mudanças de autenticação (login, cadastro, logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted.current) return;
 
       if (session?.user) {

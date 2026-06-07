@@ -24,7 +24,7 @@ export function RestaurantMenu() {
   const [loadingRestaurant, setLoadingRestaurant] = useState(true);
 
   const { items: menuItems, isLoading: loadingMenu } = useMenuItems(id ?? null);
-  const { items: cartItems, restaurantId, addItem, removeItem, updateQty, totalItems, totalPrice } = useCart();
+  const { items: cartItems, restaurantId, addItem, updateQty, totalItems, totalPrice } = useCart();
 
   useEffect(() => {
     if (!id) return;
