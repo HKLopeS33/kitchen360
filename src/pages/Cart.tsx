@@ -88,12 +88,18 @@ export function Cart() {
         return;
       }
 
-      // 3. Limpa o carrinho e redireciona para o Mercado Pago
+      // 3. Limpa o carrinho
       clearCart();
-      toast.success(`Pedido #${order.order_number} criado! Redirecionando para pagamento...`);
+      toast.success(`Pedido #${order.order_number} criado! Abrindo pagamento...`);
 
-      // Sempre usa o checkout de produção (credenciais reais)
-      window.location.href = data.checkoutUrl;
+      // Abre o checkout do Mercado Pago em uma nova aba.
+      // Importante: para métodos assíncronos (PIX, boleto) o MP NÃO redireciona
+      // automaticamente de volta ao site após o pagamento — o cliente só vê a
+      // confirmação dentro do próprio checkout. Por isso já levamos o cliente
+      // para a tela de acompanhamento do pedido nesta aba, garantindo que ele
+      // sempre veja o status do pedido independente do comportamento do MP.
+      window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
+      navigate(`/pedido/${order.id}`, { replace: true });
 
     } catch (err: any) {
       toast.error(err.message || 'Erro ao finalizar pedido');
