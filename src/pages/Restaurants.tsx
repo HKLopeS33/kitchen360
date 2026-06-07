@@ -39,7 +39,7 @@ export function Restaurants() {
   return (
     <div className="min-h-screen bg-[#f7f5f0]">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
+      <header className="bg-white/90 backdrop-blur-md border-b border-[#e3ede0] sticky top-0 z-10 shadow-[0_1px_12px_rgba(45,80,22,0.06)]">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-[#2D5016] font-bold text-lg">
             <Leaf size={22} className="text-[#6BA534]" /> Floresta Já
@@ -105,22 +105,24 @@ export function Restaurants() {
 
       <main className="max-w-2xl mx-auto px-4 py-8">
         {/* Title */}
-        <div className="mb-6 animate-fade-in-up">
-          <h1 className="text-3xl font-black bg-gradient-to-r from-[#2D5016] to-[#6BA534] bg-clip-text text-transparent">{title}</h1>
-          <div className="flex items-center gap-1.5 mt-1">
-            <MapPin size={15} className="text-[#6BA534]" />
-            <p className="text-sm text-[#6BA534] font-medium">Floresta - PE</p>
+        <div className="mb-7 animate-fade-in-up">
+          <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-[#2D5016] via-[#4a8526] to-[#6BA534] bg-clip-text text-transparent drop-shadow-sm">{title}</h1>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className="flex items-center gap-1 bg-[#e8f5e0] text-[#2D5016] text-xs font-bold px-2.5 py-1 rounded-full">
+              <MapPin size={12} />
+              Floresta - PE
+            </span>
           </div>
         </div>
 
         {/* Abas de categoria */}
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-4 px-4 scrollbar-none">
+        <div className="flex gap-2.5 overflow-x-auto pb-1.5 mb-6 -mx-4 px-4 scrollbar-none">
           <button
             onClick={() => setCategory('todos')}
-            className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all duration-200 ${
+            className={`shrink-0 flex items-center gap-1.5 px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition-all duration-200 ${
               category === 'todos'
-                ? 'border-[#2D5016] bg-gradient-to-b from-[#356019] to-[#2D5016] text-white shadow-[0_2px_10px_rgba(45,80,22,0.28)]'
-                : 'border-gray-200 bg-white text-[#666] hover:border-[#bcd9a4] hover:text-[#2D5016] shadow-sm'
+                ? 'border-transparent bg-gradient-to-br from-[#3d6b1e] to-[#2D5016] text-white shadow-[0_4px_14px_rgba(45,80,22,0.35)] scale-[1.03]'
+                : 'border-[#e3ede0] bg-white text-[#666] hover:border-[#bcd9a4] hover:text-[#2D5016] shadow-sm'
             }`}
           >
             Todos
@@ -132,10 +134,10 @@ export function Restaurants() {
               <button
                 key={c.id}
                 onClick={() => setCategory(c.id)}
-                className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all duration-200 ${
+                className={`shrink-0 flex items-center gap-1.5 px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition-all duration-200 ${
                   active
-                    ? 'border-[#2D5016] bg-gradient-to-b from-[#356019] to-[#2D5016] text-white shadow-[0_2px_10px_rgba(45,80,22,0.28)]'
-                    : 'border-gray-200 bg-white text-[#666] hover:border-[#bcd9a4] hover:text-[#2D5016] shadow-sm'
+                    ? 'border-transparent bg-gradient-to-br from-[#3d6b1e] to-[#2D5016] text-white shadow-[0_4px_14px_rgba(45,80,22,0.35)] scale-[1.03]'
+                    : 'border-[#e3ede0] bg-white text-[#666] hover:border-[#bcd9a4] hover:text-[#2D5016] shadow-sm'
                 }`}
               >
                 <Icon size={15} className={active ? 'text-white' : 'text-[#6BA534]'} />
@@ -146,15 +148,15 @@ export function Restaurants() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6">
-          <span className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Search size={17} className="text-[#aaa]" />
+        <div className="relative mb-7">
+          <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+            <Search size={18} className="text-[#9ab98a]" />
           </span>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar estabelecimento..."
-            className="w-full bg-white border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm leading-normal outline-none shadow-sm focus:border-[#2D5016] focus:ring-4 focus:ring-[#2D5016]/10 transition-all"
+            className="w-full bg-white border-2 border-[#e3ede0] rounded-2xl pl-12 pr-4 py-3.5 text-sm leading-normal outline-none shadow-sm focus:border-[#6BA534] focus:ring-4 focus:ring-[#6BA534]/12 transition-all placeholder:text-[#bbb]"
           />
         </div>
 
@@ -192,7 +194,7 @@ export function Restaurants() {
                   key={restaurant.id}
                   to={`/restaurantes/${restaurant.id}`}
                   style={{ animationDelay: `${Math.min(idx, 8) * 45}ms` }}
-                  className="block bg-white rounded-2xl shadow-sm card-hover animate-fade-in-up border border-transparent hover:border-[#d8ecc6]"
+                  className="block bg-white rounded-3xl shadow-[0_2px_14px_rgba(20,40,10,0.06)] card-hover animate-fade-in-up border-2 border-transparent hover:border-[#cfe9ba] overflow-hidden"
                 >
                   <div className="flex items-center gap-4 p-4">
                     {/* Logo quadrada */}
