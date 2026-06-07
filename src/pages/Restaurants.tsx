@@ -1,4 +1,4 @@
-import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, Package, User, LogOut } from 'lucide-react';
+import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, Package, User, LogOut, Store } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useRestaurants } from '../helpers/useRestaurants';
@@ -17,6 +17,7 @@ export function Restaurants() {
   const { totalItems } = useCart();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category | 'todos'>('todos');
+  const [quickFilter, setQuickFilter] = useState<'todos' | 'aberto' | 'frete' | 'promo'>('todos');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +31,7 @@ export function Restaurants() {
 
   const filtered = restaurants.filter(r =>
     (category === 'todos' || r.category === category) &&
+    (quickFilter !== 'aberto' || r.is_open_today) &&
     (r.name.toLowerCase().includes(search.toLowerCase()) ||
      r.description.toLowerCase().includes(search.toLowerCase()))
   );
@@ -161,36 +163,69 @@ export function Restaurants() {
           </div>
         </div>
 
-        {/* Abas de categoria */}
-        <div className="flex gap-2 overflow-x-auto pb-1.5 mb-7 -mx-4 px-4 scrollbar-none">
-          <button
-            onClick={() => setCategory('todos')}
-            className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold transition-all duration-200 ${
+        {/* Atalhos circulares de categoria */}
+        <div className="flex gap-4 overflow-x-auto pb-1.5 mb-5 -mx-4 px-4 scrollbar-none">
+          <button onClick={() => setCategory('todos')} className="shrink-0 flex flex-col items-center gap-1.5 group">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 ${
               category === 'todos'
-                ? 'bg-[#2D5016] text-white shadow-[0_4px_12px_rgba(45,80,22,0.3)]'
-                : 'bg-white text-[#666] hover:text-[#2D5016] border border-[#e3ede0] shadow-sm'
-            }`}
-          >
-            Todos
+                ? 'bg-[#2D5016] shadow-[0_6px_16px_rgba(45,80,22,0.35)] scale-105'
+                : 'bg-white border border-[#e3ede0] shadow-sm group-hover:border-[#bcd9a4]'
+            }`}>
+              <Store size={22} className={category === 'todos' ? 'text-white' : 'text-[#6BA534]'} />
+            </div>
+            <span className={`text-[11px] font-semibold ${category === 'todos' ? 'text-[#2D5016]' : 'text-[#888]'}`}>Todos</span>
           </button>
           {CATEGORIES.map(c => {
             const Icon = c.icon;
             const active = category === c.id;
             return (
-              <button
-                key={c.id}
-                onClick={() => setCategory(c.id)}
-                className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold transition-all duration-200 ${
+              <button key={c.id} onClick={() => setCategory(c.id)} className="shrink-0 flex flex-col items-center gap-1.5 group">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 ${
                   active
-                    ? 'bg-[#2D5016] text-white shadow-[0_4px_12px_rgba(45,80,22,0.3)]'
-                    : 'bg-white text-[#666] hover:text-[#2D5016] border border-[#e3ede0] shadow-sm'
-                }`}
-              >
-                <Icon size={14} className={active ? 'text-white' : 'text-[#6BA534]'} />
-                {c.labelPlural}
+                    ? 'bg-[#2D5016] shadow-[0_6px_16px_rgba(45,80,22,0.35)] scale-105'
+                    : 'bg-white border border-[#e3ede0] shadow-sm group-hover:border-[#bcd9a4]'
+                }`}>
+                  <Icon size={22} className={active ? 'text-white' : 'text-[#6BA534]'} />
+                </div>
+                <span className={`text-[11px] font-semibold whitespace-nowrap ${active ? 'text-[#2D5016]' : 'text-[#888]'}`}>{c.label}</span>
               </button>
             );
           })}
+        </div>
+
+        {/* Chips de filtro rápido */}
+        <div className="flex gap-2 overflow-x-auto pb-1.5 mb-7 -mx-4 px-4 scrollbar-none">
+          <button
+            onClick={() => setQuickFilter(f => f === 'aberto' ? 'todos' : 'aberto')}
+            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
+              quickFilter === 'aberto'
+                ? 'bg-[#2D5016] text-white shadow-[0_4px_12px_rgba(45,80,22,0.3)]'
+                : 'bg-[#e8f5e0] text-[#2D5016] hover:brightness-95'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${quickFilter === 'aberto' ? 'bg-white' : 'bg-[#6BA534]'} animate-pulse`} />
+            Aberto agora
+          </button>
+          <button
+            onClick={() => setQuickFilter(f => f === 'frete' ? 'todos' : 'frete')}
+            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
+              quickFilter === 'frete'
+                ? 'bg-[#2D5016] text-white shadow-[0_4px_12px_rgba(45,80,22,0.3)]'
+                : 'bg-[#fff4e0] text-[#b9790a] hover:brightness-95'
+            }`}
+          >
+            🛵 Frete grátis
+          </button>
+          <button
+            onClick={() => setQuickFilter(f => f === 'promo' ? 'todos' : 'promo')}
+            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
+              quickFilter === 'promo'
+                ? 'bg-[#2D5016] text-white shadow-[0_4px_12px_rgba(45,80,22,0.3)]'
+                : 'bg-[#fde8ea] text-[#c23b52] hover:brightness-95'
+            }`}
+          >
+            🔥 Promoções
+          </button>
         </div>
 
         {/* List */}
