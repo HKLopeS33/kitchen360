@@ -29,12 +29,14 @@ export function Restaurants() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  const filtered = restaurants.filter(r =>
-    (category === 'todos' || r.category === category) &&
-    (quickFilter !== 'aberto' || r.is_open_today) &&
-    (r.name.toLowerCase().includes(search.toLowerCase()) ||
-     r.description.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filtered = restaurants
+    .filter(r =>
+      (category === 'todos' || r.category === category) &&
+      (quickFilter !== 'aberto' || r.is_open_today) &&
+      (r.name.toLowerCase().includes(search.toLowerCase()) ||
+       r.description.toLowerCase().includes(search.toLowerCase()))
+    )
+    .sort((a, b) => Number(b.is_open_today) - Number(a.is_open_today));
 
   const title = category === 'todos' ? 'Estabelecimentos' : getCategory(category).labelPlural;
 
