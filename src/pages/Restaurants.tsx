@@ -1,11 +1,11 @@
 import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, Package, User, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf } from 'lucide-react';
 import { useRestaurants } from '../helpers/useRestaurants';
 import { useAuth } from '../helpers/useAuth';
 import { useCart } from '../helpers/useCart';
 import { CATEGORIES, getCategory, type Category } from '../lib/categories';
+import logo from '../assets/logo.png';
 
 function formatTime(time: string) {
   return time?.slice(0, 5) ?? '--:--';
@@ -41,8 +41,8 @@ export function Restaurants() {
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md border-b border-[#e3ede0] sticky top-0 z-10 shadow-[0_1px_12px_rgba(45,80,22,0.06)]">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-[#2D5016] font-bold text-lg">
-            <Leaf size={22} className="text-[#6BA534]" /> Floresta Já
+          <Link to="/" className="flex items-center gap-2">
+            <img src={logo} alt="Floresta Já" className="h-10 w-auto object-contain" />
           </Link>
           <div className="flex items-center gap-3">
             {/* Carrinho com badge */}

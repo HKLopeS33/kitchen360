@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Leaf, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
 import { Button } from '../components/Button';
+import logo from '../assets/logo.png';
 
 export function Login() {
   const { login, user, isLoading } = useAuth();
@@ -48,14 +49,11 @@ export function Login() {
 
       <div className="relative w-full max-w-sm">
         {/* Identidade visual / logo */}
-        <div className="flex flex-col items-center mb-8 animate-fade-in-up">
-          <div className="w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-4 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
-            <Leaf size={40} className="text-[#bfe8a0]" strokeWidth={2.2} />
+        <div className="flex flex-col items-center mb-6 animate-fade-in-up">
+          <div className="w-40 h-40 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-1 shadow-[0_8px_32px_rgba(0,0,0,0.25)] overflow-hidden p-3">
+            <img src={logo} alt="Floresta Já" className="w-full h-full object-contain drop-shadow-lg" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
-            Floresta Já <Sparkles size={16} className="text-[#bfe8a0]" />
-          </h1>
-          <p className="text-sm text-[#cfe9b8] font-medium mt-0.5">Sabores de Floresta - PE, na sua porta</p>
+          <p className="text-sm text-[#cfe9b8] font-medium mt-1">Sabores de Floresta - PE, na sua porta</p>
         </div>
 
         <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_24px_64px_rgba(15,30,8,0.35)] p-8 animate-scale-in border border-white/40">
