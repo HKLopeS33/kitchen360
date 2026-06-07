@@ -65,7 +65,7 @@ function OrderCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (i
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden card-hover animate-fade-in-up">
       {/* Header do card */}
       <button
         type="button"
@@ -133,7 +133,7 @@ function OrderCard({ order, onUpdateStatus }: { order: Order; onUpdateStatus: (i
                 <button
                   onClick={handleAdvance}
                   disabled={updating}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#2D5016] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#3d6b1e] transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-[#356019] to-[#2D5016] text-white text-sm font-semibold py-2.5 rounded-xl shadow-[0_2px_10px_rgba(45,80,22,0.25)] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
                 >
                   <CheckCircle size={16} />
                   {NEXT_LABEL[order.status]}
@@ -165,7 +165,7 @@ export function OrdersPanel({ restaurantId }: OrdersPanelProps) {
   const [tab, setTab] = useState<'active' | 'history'>('active');
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-6 mt-5">
+    <div className="bg-white rounded-2xl shadow-sm p-6 mt-5 animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-bold text-[#1a1a1a] flex items-center gap-2">
@@ -203,7 +203,7 @@ export function OrdersPanel({ restaurantId }: OrdersPanelProps) {
 
       {isLoading ? (
         <div className="space-y-3">
-          {[1, 2].map(i => <div key={i} className="h-16 bg-gray-50 rounded-xl animate-pulse" />)}
+          {[1, 2].map(i => <div key={i} className="skeleton h-16" />)}
         </div>
       ) : tab === 'active' ? (
         activeOrders.length === 0 ? (

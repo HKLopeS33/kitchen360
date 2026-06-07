@@ -49,7 +49,7 @@ export function PaymentStatus() {
 
   return (
     <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-4">
-      <div className={`w-full max-w-sm ${cfg.bg} rounded-3xl p-8 text-center shadow-sm`}>
+      <div className={`w-full max-w-sm ${cfg.bg} rounded-3xl p-8 text-center shadow-lg animate-scale-in`}>
         <div className="flex justify-center mb-4">{cfg.icon}</div>
         <h1 className={`text-2xl font-black mb-2 ${cfg.color}`}>{cfg.title}</h1>
         {orderNum && (
@@ -66,7 +66,7 @@ export function PaymentStatus() {
         <div className={`space-y-3 ${willRedirect ? '' : 'mt-6'}`}>
           {willRedirect && (
             <Link to={`/pedido/${orderId}`}
-              className="flex items-center justify-center gap-2 bg-[#2D5016] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#3d6b1e] transition-colors">
+              className="flex items-center justify-center gap-2 bg-gradient-to-b from-[#356019] to-[#2D5016] text-white font-semibold px-6 py-3 rounded-xl shadow-[0_2px_10px_rgba(45,80,22,0.28)] hover:brightness-110 active:scale-[0.98] transition-all">
               <MapPin size={16} /> Acompanhar pedido agora
             </Link>
           )}

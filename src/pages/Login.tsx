@@ -38,11 +38,11 @@ export function Login() {
   return (
     <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <Link to="/restaurantes" className="flex items-center justify-center gap-2 text-[#2D5016] font-bold text-xl mb-8">
+        <Link to="/restaurantes" className="flex items-center justify-center gap-2 text-[#2D5016] font-bold text-xl mb-8 animate-fade-in-up">
           <Leaf size={24} className="text-[#6BA534]" /> Floresta Já
         </Link>
 
-        <div className="bg-white rounded-2xl shadow-sm p-8">
+        <div className="bg-white rounded-2xl shadow-lg p-8 animate-scale-in">
           <h1 className="text-2xl font-black text-[#1a1a1a] mb-1">Entrar</h1>
           <p className="text-sm text-[#6BA534] mb-6">Floresta - PE</p>
 

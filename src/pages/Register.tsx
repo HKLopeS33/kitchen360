@@ -42,11 +42,11 @@ export function Register() {
   return (
     <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <Link to="/" className="flex items-center justify-center gap-2 text-[#2D5016] font-bold text-xl mb-8">
+        <Link to="/" className="flex items-center justify-center gap-2 text-[#2D5016] font-bold text-xl mb-8 animate-fade-in-up">
           <Leaf size={24} className="text-[#6BA534]" /> Floresta Já
         </Link>
 
-        <div className="bg-white rounded-2xl shadow-sm p-8">
+        <div className="bg-white rounded-2xl shadow-lg p-8 animate-scale-in">
           <h1 className="text-2xl font-black text-[#1a1a1a] mb-1">Criar Conta</h1>
           <p className="text-sm text-[#6BA534] mb-6">Floresta - PE</p>
 
@@ -60,8 +60,8 @@ export function Register() {
                   onClick={() => setRole('client')}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
                     role === 'client'
-                      ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016]'
-                      : 'border-gray-200 text-[#777] hover:border-gray-300'
+                      ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016] glow-brand'
+                      : 'border-gray-200 text-[#777] hover:border-[#bcd9a4]'
                   }`}
                 >
                   <User size={20} />
@@ -72,8 +72,8 @@ export function Register() {
                   onClick={() => setRole('restaurant_owner')}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
                     role === 'restaurant_owner'
-                      ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016]'
-                      : 'border-gray-200 text-[#777] hover:border-gray-300'
+                      ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016] glow-brand'
+                      : 'border-gray-200 text-[#777] hover:border-[#bcd9a4]'
                   }`}
                 >
                   <UtensilsCrossed size={20} />

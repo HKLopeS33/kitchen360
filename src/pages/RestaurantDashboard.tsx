@@ -192,7 +192,7 @@ export function RestaurantDashboard() {
 
         {/* Skeleton de carregamento */}
         {restaurantLoading ? (
-          <div className="bg-white rounded-2xl p-6 animate-pulse space-y-3">
+          <div className="bg-white rounded-2xl p-6 space-y-3">
             <div className="h-5 bg-gray-100 rounded w-1/3" />
             <div className="h-12 bg-gray-100 rounded" />
             <div className="h-12 bg-gray-100 rounded" />
@@ -268,10 +268,10 @@ export function RestaurantDashboard() {
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     tab === t.key
-                      ? 'bg-[#2D5016] text-white shadow-sm'
-                      : 'text-[#777] hover:text-[#333]'
+                      ? 'bg-gradient-to-b from-[#356019] to-[#2D5016] text-white shadow-[0_2px_10px_rgba(45,80,22,0.28)]'
+                      : 'text-[#777] hover:text-[#2D5016] hover:bg-[#f7f5f0]'
                   }`}
                 >
                   {t.icon} {t.label}
@@ -339,7 +339,7 @@ export function RestaurantDashboard() {
                 )}
 
                 {loadingMenu ? (
-                  <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-gray-50 rounded-xl animate-pulse" />)}</div>
+                  <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="skeleton h-14" />)}</div>
                 ) : menuItems.length === 0 ? (
                   <p className="text-sm text-[#aaa] text-center py-8">Nenhum item ainda. Adicione o primeiro!</p>
                 ) : (

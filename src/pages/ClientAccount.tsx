@@ -45,7 +45,7 @@ export function ClientAccount() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4 animate-fade-in-up">
           <div>
             <label className="flex items-center gap-1.5 text-sm font-semibold text-[#333] mb-1.5">
               <User size={14} className="text-[#6BA534]" /> Nome
@@ -71,7 +71,7 @@ export function ClientAccount() {
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-white text-red-500 font-semibold px-6 py-3 rounded-xl shadow-sm hover:bg-red-50 transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-white text-red-500 font-semibold px-6 py-3 rounded-xl shadow-sm hover:bg-red-50 hover:shadow-md active:scale-[0.98] transition-all animate-fade-in-up"
         >
           <LogOut size={16} /> Sair da conta
         </button>

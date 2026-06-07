@@ -26,7 +26,7 @@ export function OrderTracking() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center">
-        <div className="animate-pulse text-[#aaa] text-sm">Carregando pedido...</div>
+        <div className="flex items-center gap-2 text-[#aaa] text-sm"><div className="w-4 h-4 border-2 border-[#6BA534] border-t-transparent rounded-full animate-spin" />Carregando pedido...</div>
       </div>
     );
   }
@@ -64,10 +64,10 @@ export function OrderTracking() {
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
 
         {/* Cabeçalho do pedido */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
+        <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between animate-fade-in-up">
           <div>
             <p className="text-xs text-[#999] mb-0.5">Pedido</p>
-            <p className="text-2xl font-black text-[#2D5016]">#{order.order_number}</p>
+            <p className="text-2xl font-black bg-gradient-to-r from-[#2D5016] to-[#6BA534] bg-clip-text text-transparent">#{order.order_number}</p>
             <p className="text-xs text-[#aaa] mt-1">{formatDate(order.created_at)}</p>
           </div>
           <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
@@ -91,7 +91,7 @@ export function OrderTracking() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6 animate-fade-in-up">
             <div className="relative">
               {/* Linha vertical contínua de fundo */}
               <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-gray-100 -translate-x-1/2" />
@@ -109,9 +109,9 @@ export function OrderTracking() {
                   return (
                     <div key={step.key} className="flex items-center gap-4">
                       {/* Indicador */}
-                      <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                        done ? 'bg-[#2D5016] text-white' : 'bg-gray-100 text-gray-300'
-                      } ${active ? 'ring-4 ring-[#e8f5e0]' : ''}`}>
+                      <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                        done ? 'bg-gradient-to-b from-[#356019] to-[#2D5016] text-white shadow-[0_2px_10px_rgba(45,80,22,0.3)]' : 'bg-gray-100 text-gray-300'
+                      } ${active ? 'ring-4 ring-[#e8f5e0] scale-110' : ''}`}>
                         {step.icon}
                       </div>
                       {/* Texto */}
@@ -131,7 +131,7 @@ export function OrderTracking() {
         )}
 
         {/* Detalhes do pedido */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
+        <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4 animate-fade-in-up">
           <h3 className="font-bold text-[#1a1a1a] flex items-center gap-2">
             <Store size={16} className="text-[#6BA534]" /> Itens do pedido
           </h3>
@@ -150,7 +150,7 @@ export function OrderTracking() {
         </div>
 
         {/* Endereço */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 animate-fade-in-up">
           <h3 className="font-bold text-[#1a1a1a] flex items-center gap-2 mb-2">
             <MapPin size={16} className="text-[#6BA534]" /> Entrega
           </h3>

@@ -35,7 +35,7 @@ export function PaymentWaiting() {
 
   return (
     <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-sm p-8 text-center">
+      <div className="w-full max-w-sm bg-white rounded-3xl shadow-lg p-8 text-center animate-scale-in">
         <div className="flex justify-center mb-2">
           <Leaf size={20} className="text-[#6BA534]" />
         </div>

@@ -98,7 +98,7 @@ export function RestaurantMenu() {
 
       <main className="max-w-2xl mx-auto px-4 py-6">
         {/* Restaurant info */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-6 animate-fade-in-up">
           {restaurant.image_url && (
             <img src={restaurant.image_url} alt={restaurant.name} className="w-full h-44 object-cover" />
           )}
@@ -133,10 +133,10 @@ export function RestaurantMenu() {
         {loadingMenu ? (
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-4 animate-pulse">
-                <div className="h-4 bg-gray-100 rounded w-1/3 mb-4" />
-                <div className="h-16 bg-gray-100 rounded mb-2" />
-                <div className="h-16 bg-gray-100 rounded" />
+              <div key={i} className="bg-white rounded-2xl p-4">
+                <div className="skeleton h-4 rounded w-1/3 mb-4" />
+                <div className="skeleton h-16 rounded mb-2" />
+                <div className="skeleton h-16 rounded" />
               </div>
             ))}
           </div>
@@ -146,14 +146,14 @@ export function RestaurantMenu() {
           </div>
         ) : (
           <div className="space-y-6">
-            {categories.map(cat => (
-              <div key={cat}>
+            {categories.map((cat, ci) => (
+              <div key={cat} className="animate-fade-in-up" style={{ animationDelay: `${ci * 60}ms` }}>
                 <h2 className="text-xs font-black uppercase tracking-widest text-[#6BA534] mb-3 px-1">{cat}</h2>
                 <div className="space-y-3">
                   {grouped[cat].map(item => {
                     const qty = getQty(item.id);
                     return (
-                      <div key={item.id} className="bg-white rounded-2xl shadow-sm p-4 flex gap-4">
+                      <div key={item.id} className="bg-white rounded-2xl shadow-sm p-4 flex gap-4 card-hover">
                         {item.image_url && (
                           <img src={item.image_url} alt={item.name} className="w-20 h-20 object-cover rounded-xl shrink-0" />
                         )}
@@ -168,7 +168,7 @@ export function RestaurantMenu() {
                               <button
                                 onClick={() => handleAdd(item)}
                                 disabled={!restaurant.is_open_today}
-                                className="flex items-center gap-1.5 bg-[#2D5016] disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#3d6b1e] transition-colors"
+                                className="flex items-center gap-1.5 bg-gradient-to-b from-[#356019] to-[#2D5016] disabled:from-gray-200 disabled:to-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-[0_2px_10px_rgba(45,80,22,0.25)] hover:brightness-110 active:scale-95 transition-all"
                               >
                                 <Plus size={15} /> Adicionar
                               </button>
@@ -207,7 +207,7 @@ export function RestaurantMenu() {
           <div className="max-w-2xl mx-auto pointer-events-auto">
             <Link
               to="/cart"
-              className="flex items-center justify-between bg-[#2D5016] text-white px-6 py-4 rounded-2xl shadow-xl hover:bg-[#3d6b1e] transition-colors"
+              className="flex items-center justify-between bg-gradient-to-b from-[#356019] to-[#2D5016] text-white px-6 py-4 rounded-2xl shadow-xl hover:brightness-110 active:scale-[0.98] transition-all animate-fade-in-up"
             >
               <div className="flex items-center gap-3">
                 <span className="bg-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-sm font-black">{totalItems}</span>

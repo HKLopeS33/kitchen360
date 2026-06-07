@@ -2,15 +2,113 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --brand: #2D5016;
+  --brand-light: #6BA534;
+  --brand-bg: #e8f5e0;
+  --surface: #ffffff;
+  --bg: #f7f5f0;
+  --shadow-sm: 0 1px 2px rgba(20, 40, 10, 0.04), 0 1px 6px rgba(20, 40, 10, 0.04);
+  --shadow-md: 0 4px 16px rgba(20, 40, 10, 0.08), 0 2px 6px rgba(20, 40, 10, 0.05);
+  --shadow-lg: 0 12px 32px rgba(20, 40, 10, 0.12), 0 4px 12px rgba(20, 40, 10, 0.06);
+}
+
+html { scroll-behavior: smooth; }
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #f7f5f0;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(107, 165, 52, 0.06), transparent 40%),
+    radial-gradient(circle at 100% 0%, rgba(45, 80, 22, 0.05), transparent 35%);
+  background-attachment: fixed;
   color: #1a1a1a;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a { text-decoration: none; color: inherit; }
 
 #root {
   min-height: 100vh;
+}
+
+/* Scrollbar mais discreta e elegante */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(45, 80, 22, 0.18);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(45, 80, 22, 0.32); }
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Foco acessível e elegante em todos os elementos interativos */
+:focus-visible {
+  outline: 2px solid var(--brand-light);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Transições suaves padrão para hover/active em elementos interativos */
+button, a, input, textarea, select {
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+              color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease,
+              opacity 0.15s ease;
+}
+
+button:active:not(:disabled) { transform: scale(0.97); }
+
+/* Animações de entrada usadas em cards, modais, listas, etc. */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+.animate-fade-in-up { animation: fade-in-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-in { animation: fade-in 0.25s ease both; }
+.animate-scale-in { animation: scale-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Skeleton de carregamento com brilho sutil, mais agradável que pulse simples */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #eef0e9;
+  border-radius: 12px;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* Cartões com leve elevação ao passar o mouse — uso opcional via classe */
+.card-hover {
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Efeito de destaque suave (glow) usado em elementos ativos/selecionados */
+.glow-brand {
+  box-shadow: 0 0 0 4px rgba(107, 165, 52, 0.14);
 }

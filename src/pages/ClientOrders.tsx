@@ -47,24 +47,30 @@ export function ClientOrders() {
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-5 animate-pulse h-24" />
+              <div key={i} className="bg-white rounded-2xl p-5 shadow-sm h-24 flex items-center gap-4">
+                <div className="skeleton h-12 w-12 rounded-xl shrink-0" />
+                <div className="flex-1 space-y-2"><div className="skeleton h-3 w-1/2 rounded" /><div className="skeleton h-3 w-3/4 rounded" /></div>
+              </div>
             ))}
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-20">
-            <Package size={56} className="text-gray-200 mx-auto mb-3" />
-            <p className="text-[#aaa] text-lg">Você ainda não fez pedidos</p>
+          <div className="text-center py-20 animate-fade-in">
+            <div className="w-20 h-20 rounded-full bg-[#e8f5e0] flex items-center justify-center mx-auto mb-4">
+              <Package size={32} className="text-[#6BA534]" />
+            </div>
+            <p className="text-[#888] text-lg font-semibold">Você ainda não fez pedidos</p>
             <Link to="/restaurantes" className="inline-block mt-4 text-sm font-semibold text-[#2D5016] hover:underline">
               Ver estabelecimentos
             </Link>
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.map(order => (
+            {orders.map((order, idx) => (
               <Link
                 key={order.id}
                 to={order.status === 'awaiting_payment' ? `/pagamento-pendente/${order.id}` : `/pedido/${order.id}`}
-                className="block bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-4"
+                style={{ animationDelay: `${idx * 50}ms` }}
+                className="block bg-white rounded-2xl shadow-sm card-hover animate-fade-in-up p-4"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">

@@ -122,7 +122,7 @@ export function Cart() {
         <ShoppingCart size={64} className="text-gray-200" />
         <h2 className="text-2xl font-bold text-[#333]">Indisponível para estabelecimentos</h2>
         <p className="text-[#888]">Contas de estabelecimento não podem fazer pedidos nem pagamentos. Use uma conta de cliente para comprar.</p>
-        <Link to="/restaurantes" className="mt-2 bg-[#2D5016] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#3d6b1e] transition-colors">
+        <Link to="/restaurantes" className="mt-2 bg-gradient-to-b from-[#356019] to-[#2D5016] text-white px-8 py-3 rounded-xl font-semibold shadow-[0_2px_10px_rgba(45,80,22,0.28)] hover:brightness-110 active:scale-95 transition-all">
           Voltar
         </Link>
       </div>
@@ -135,7 +135,7 @@ export function Cart() {
         <ShoppingCart size={64} className="text-gray-200" />
         <h2 className="text-2xl font-bold text-[#333]">Seu carrinho está vazio</h2>
         <p className="text-[#888] text-center">Escolha um restaurante e adicione itens ao carrinho</p>
-        <Link to="/restaurantes" className="mt-2 bg-[#2D5016] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#3d6b1e] transition-colors">
+        <Link to="/restaurantes" className="mt-2 bg-gradient-to-b from-[#356019] to-[#2D5016] text-white px-8 py-3 rounded-xl font-semibold shadow-[0_2px_10px_rgba(45,80,22,0.28)] hover:brightness-110 active:scale-95 transition-all">
           Ver restaurantes
         </Link>
       </div>
@@ -168,8 +168,8 @@ export function Cart() {
 
         {/* Itens */}
         <div className="space-y-3">
-          {items.map(({ item, quantity }) => (
-            <div key={item.id} className="bg-white rounded-2xl p-4 flex gap-4 shadow-sm">
+          {items.map(({ item, quantity }, idx) => (
+            <div key={item.id} style={{ animationDelay: `${idx * 50}ms` }} className="bg-white rounded-2xl p-4 flex gap-4 shadow-sm card-hover animate-fade-in-up">
               {item.image_url && (
                 <img src={item.image_url} alt={item.name} className="w-20 h-20 object-cover rounded-xl shrink-0" />
               )}
@@ -201,7 +201,7 @@ export function Cart() {
         </div>
 
         {/* Checkout */}
-        <form onSubmit={handleCheckout} className="bg-white rounded-2xl p-6 shadow-sm space-y-5">
+        <form onSubmit={handleCheckout} className="bg-white rounded-2xl p-6 shadow-sm space-y-5 animate-fade-in-up">
           <h2 className="font-black text-[#1a1a1a] text-lg flex items-center gap-2">
             <FileText size={18} className="text-[#6BA534]" /> Finalizar Pedido
           </h2>
@@ -235,8 +235,8 @@ export function Cart() {
                   onClick={() => setPaymentMethod(opt.id)}
                   className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
                     paymentMethod === opt.id
-                      ? 'border-[#2D5016] bg-[#e8f5e0]'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                      ? 'border-[#2D5016] bg-[#e8f5e0] glow-brand'
+                      : 'border-gray-200 hover:border-[#bcd9a4] bg-white'
                   }`}
                 >
                   <span className={paymentMethod === opt.id ? 'text-[#2D5016]' : 'text-[#aaa]'}>
