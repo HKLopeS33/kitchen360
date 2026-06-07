@@ -106,13 +106,13 @@ export function Restaurants() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6">
-          <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#aaa]" />
+        <div className="relative mb-6 flex items-center">
+          <Search size={17} className="absolute left-4 text-[#aaa] pointer-events-none" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar estabelecimento..."
-            className="w-full bg-white border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
+            className="w-full bg-white border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm leading-normal outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
           />
         </div>
 
