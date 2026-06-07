@@ -33,6 +33,8 @@ export function Restaurants() {
     .filter(r =>
       (category === 'todos' || r.category === category) &&
       (quickFilter !== 'aberto' || r.is_open_today) &&
+      (quickFilter !== 'frete' || r.free_shipping) &&
+      (quickFilter !== 'promo' || !!r.promo_text) &&
       (r.name.toLowerCase().includes(search.toLowerCase()) ||
        r.description.toLowerCase().includes(search.toLowerCase()))
     )
@@ -301,6 +303,27 @@ export function Restaurants() {
 
                       {restaurant.description && (
                         <p className="text-xs text-[#888] mb-2 line-clamp-1 mt-1">{restaurant.description}</p>
+                      )}
+
+                      {/* Selos: frete grátis, promoção, tempo estimado */}
+                      {(restaurant.free_shipping || restaurant.promo_text || restaurant.is_open_today) && (
+                        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                          {restaurant.is_open_today && (
+                            <span className="inline-flex items-center gap-1 bg-[#eef6f9] text-[#2778a0] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              ⏱ {restaurant.delivery_time_min}-{restaurant.delivery_time_max} min
+                            </span>
+                          )}
+                          {restaurant.free_shipping && (
+                            <span className="inline-flex items-center gap-1 bg-[#fff4e0] text-[#b9790a] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              🛵 Frete grátis
+                            </span>
+                          )}
+                          {restaurant.promo_text && (
+                            <span className="inline-flex items-center gap-1 bg-[#fde8ea] text-[#c23b52] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              🔥 {restaurant.promo_text}
+                            </span>
+                          )}
+                        </div>
                       )}
 
                       <div className="flex flex-wrap gap-x-3 gap-y-1">

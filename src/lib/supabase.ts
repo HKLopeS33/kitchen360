@@ -45,6 +45,10 @@ export interface Restaurant {
   open_time: string;
   close_time: string;
   is_open_today: boolean;
+  free_shipping: boolean;
+  promo_text: string | null;
+  delivery_time_min: number;
+  delivery_time_max: number;
   image_url: string | null;
   mp_access_token: string | null;
   created_at: string;

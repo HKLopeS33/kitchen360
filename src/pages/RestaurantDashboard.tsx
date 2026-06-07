@@ -47,6 +47,7 @@ export function RestaurantDashboard() {
     name: '', description: '', phone: '', address: '',
     open_time: '08:00', close_time: '18:00', image_url: '', is_open_today: false,
     mp_access_token: '', category: 'restaurante' as Category,
+    free_shipping: false, promo_text: '', delivery_time_min: 30, delivery_time_max: 50,
   });
   const [showToken, setShowToken] = useState(false);
 
@@ -63,6 +64,10 @@ export function RestaurantDashboard() {
         is_open_today: restaurant.is_open_today,
         mp_access_token: restaurant.mp_access_token ?? '',
         category: (restaurant.category as Category) ?? 'restaurante',
+        free_shipping: restaurant.free_shipping ?? false,
+        promo_text: restaurant.promo_text ?? '',
+        delivery_time_min: restaurant.delivery_time_min ?? 30,
+        delivery_time_max: restaurant.delivery_time_max ?? 50,
       });
     }
   }, [restaurant]);
@@ -118,7 +123,7 @@ export function RestaurantDashboard() {
     if (!form.name.trim()) { toast.error('Nome obrigatório'); return; }
     setSaving(true);
     try {
-      const payload = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, mp_access_token: form.mp_access_token.trim() || null, category: form.category };
+      const payload = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, mp_access_token: form.mp_access_token.trim() || null, category: form.category, free_shipping: form.free_shipping, promo_text: form.promo_text.trim() || null, delivery_time_min: Number(form.delivery_time_min) || 30, delivery_time_max: Number(form.delivery_time_max) || 50 };
       if (restaurant) { await updateRestaurant(payload); toast.success('Dados atualizados!'); }
       else { await createRestaurant(payload); toast.success('Restaurante cadastrado!'); setTab('pedidos'); }
     } catch (err: any) { toast.error(err.message); }
@@ -242,6 +247,39 @@ export function RestaurantDashboard() {
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-[#333] mb-1.5">⏱ Entrega mín. (min)</label>
+                  <input type="number" min={5} value={form.delivery_time_min}
+                    onChange={e => setForm(f => ({ ...f, delivery_time_min: Number(e.target.value) }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#333] mb-1.5">⏱ Entrega máx. (min)</label>
+                  <input type="number" min={5} value={form.delivery_time_max}
+                    onChange={e => setForm(f => ({ ...f, delivery_time_max: Number(e.target.value) }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#333] mb-1.5">🔥 Texto de promoção (opcional)</label>
+                <input value={form.promo_text} onChange={e => setForm(f => ({ ...f, promo_text: e.target.value }))} placeholder="Ex: 20% OFF hoje, 2 por 1..."
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, free_shipping: !f.free_shipping }))}
+                className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                  form.free_shipping ? 'border-[#2D5016] bg-[#e8f5e0] glow-brand' : 'border-gray-200 hover:border-[#bcd9a4] bg-white'
+                }`}
+              >
+                <span className="text-xl">🛵</span>
+                <div className="flex-1">
+                  <p className={`font-semibold text-sm ${form.free_shipping ? 'text-[#2D5016]' : 'text-[#333]'}`}>Frete grátis</p>
+                  <p className="text-xs text-[#888]">Exibe um selo de frete grátis nos cards do estabelecimento</p>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${form.free_shipping ? 'border-[#2D5016] bg-[#2D5016]' : 'border-gray-300'}`} />
+              </button>
               <div>
                 <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><MapPin size={13} className="text-[#6BA534]" /> Endereço</label>
                 <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Rua, número, bairro"
