@@ -143,7 +143,7 @@ export function RestaurantDashboard() {
           </Link>
           <div className="flex items-center gap-3">
             {restaurant && (
-              <Link to={`/restaurantes/${restaurant.id}`} target="_blank"
+              <Link to={`/restaurantes/${restaurant.id}`}
                 className="text-sm text-[#777] hover:text-[#2D5016] flex items-center gap-1 transition-colors">
                 <Eye size={15} /> Ver página
               </Link>

@@ -68,6 +68,14 @@ export function useRestaurantOrders(restaurantId: string | null) {
     return () => { supabase.removeChannel(channel); };
   }, [restaurantId]);
 
+  // Polling de segurança: garante que novos pedidos sempre apareçam,
+  // mesmo se a conexão realtime cair (comum em PWA/mobile em segundo plano)
+  useEffect(() => {
+    if (!restaurantId) return;
+    const interval = setInterval(() => { fetch(); }, 15000);
+    return () => clearInterval(interval);
+  }, [restaurantId, fetch]);
+
   const updateStatus = async (orderId: string, status: OrderStatus) => {
     const { error } = await supabase
       .from('orders')

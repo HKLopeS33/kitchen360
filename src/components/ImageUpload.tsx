@@ -7,10 +7,10 @@ interface ImageUploadProps {
   onUpload: (url: string) => void;
   onRemove: () => void;
   folder?: string;         // pasta dentro do bucket (ex: "restaurantes", "cardapio")
-  aspectRatio?: string;    // ex: "aspect-video" ou "aspect-square"
+  aspectRatio?: string;    // mantido por compatibilidade (não usado no novo layout compacto)
 }
 
-export function ImageUpload({ currentUrl, onUpload, onRemove, folder = 'geral', aspectRatio = 'aspect-video' }: ImageUploadProps) {
+export function ImageUpload({ currentUrl, onUpload, onRemove, folder = 'geral' }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -52,14 +52,25 @@ export function ImageUpload({ currentUrl, onUpload, onRemove, folder = 'geral', 
       <label className="block text-sm font-semibold text-[#333] mb-1.5">Foto</label>
 
       {currentUrl ? (
-        <div className={`relative w-full ${aspectRatio} rounded-xl overflow-hidden bg-gray-100`}>
-          <img src={currentUrl} alt="Preview" className="w-full h-full object-cover" />
+        <div className="flex items-center gap-3">
+          <div className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-gray-100`}>
+            <img src={currentUrl} alt="Preview" className="w-full h-full object-cover" />
+            <button
+              type="button"
+              onClick={onRemove}
+              className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors"
+            >
+              <X size={13} />
+            </button>
+          </div>
           <button
             type="button"
-            onClick={onRemove}
-            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-1.5 text-sm font-semibold text-[#6BA534] hover:text-[#2D5016] border border-gray-200 hover:border-[#6BA534] rounded-xl px-3 py-2 transition-all disabled:opacity-50"
           >
-            <X size={16} />
+            {uploading ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />}
+            {uploading ? 'Enviando...' : 'Trocar foto'}
           </button>
         </div>
       ) : (
@@ -67,11 +78,11 @@ export function ImageUpload({ currentUrl, onUpload, onRemove, folder = 'geral', 
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className={`w-full ${aspectRatio} rounded-xl border-2 border-dashed border-gray-200 hover:border-[#6BA534] hover:bg-[#f9fdf6] transition-all flex flex-col items-center justify-center gap-2 text-[#aaa] hover:text-[#6BA534] disabled:opacity-50 disabled:cursor-not-allowed`}
+          className="flex items-center gap-2 text-sm font-semibold text-[#6BA534] hover:text-[#2D5016] border border-dashed border-gray-300 hover:border-[#6BA534] hover:bg-[#f9fdf6] rounded-xl px-4 py-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {uploading
-            ? <><Loader2 size={24} className="animate-spin" /><span className="text-sm">Enviando...</span></>
-            : <><ImagePlus size={24} /><span className="text-sm font-medium">Clique para adicionar foto</span><span className="text-xs">JPG, PNG ou WEBP · máx. 5MB</span></>
+            ? <><Loader2 size={15} className="animate-spin" /> Enviando...</>
+            : <><ImagePlus size={15} /> Adicionar foto <span className="text-xs font-normal text-[#aaa]">· JPG, PNG ou WEBP, máx. 5MB</span></>
           }
         </button>
       )}
