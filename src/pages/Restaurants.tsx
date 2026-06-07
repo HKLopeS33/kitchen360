@@ -5,7 +5,7 @@ import { useRestaurants } from '../helpers/useRestaurants';
 import { useAuth } from '../helpers/useAuth';
 import { useCart } from '../helpers/useCart';
 import { CATEGORIES, getCategory, type Category } from '../lib/categories';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo-icon.png';
 
 function formatTime(time: string) {
   return time?.slice(0, 5) ?? '--:--';
@@ -42,7 +42,8 @@ export function Restaurants() {
       <header className="bg-white/90 backdrop-blur-md border-b border-[#e3ede0] sticky top-0 z-10 shadow-[0_1px_12px_rgba(45,80,22,0.06)]">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Floresta Já" className="h-10 w-auto object-contain" />
+            <img src={logo} alt="" className="h-9 w-auto object-contain" />
+            <span className="font-black text-lg text-[#2D5016] tracking-tight">Floresta Já</span>
           </Link>
           <div className="flex items-center gap-3">
             {/* Carrinho com badge */}
