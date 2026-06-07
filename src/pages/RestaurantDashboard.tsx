@@ -32,10 +32,13 @@ export function RestaurantDashboard() {
   const { user, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { restaurant, isLoading: restaurantLoading, createRestaurant, updateRestaurant, toggleOpenToday } = useMyRestaurant(user?.id ?? null);
-  const isLoading = authLoading || restaurantLoading;
-  const { items: menuItems, isLoading: loadingMenu, createItem, updateItem, deleteItem } = useMenuItems(restaurant?.id ?? null);
 
   const [tab, setTab] = useState<Tab>('pedidos');
+
+  // Adia a busca do cardápio até a aba "Cardápio" ser aberta — evita atraso na exibição inicial (Pedidos)
+  const [menuLoaded, setMenuLoaded] = useState(false);
+  useEffect(() => { if (tab === 'cardapio') setMenuLoaded(true); }, [tab]);
+  const { items: menuItems, isLoading: loadingMenu, createItem, updateItem, deleteItem } = useMenuItems(menuLoaded ? (restaurant?.id ?? null) : null);
   const [toggling, setToggling] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -133,7 +136,9 @@ export function RestaurantDashboard() {
     finally { setToggling(false); }
   }
 
-  if (isLoading || !user) return null;
+  // Só bloqueia a renderização pela autenticação (rápida, já em cache de contexto).
+  // O carregamento do restaurante exibe seu próprio skeleton, evitando tela em branco.
+  if (authLoading || !user) return null;
 
   return (
     <div className="min-h-screen bg-[#f7f5f0]">
@@ -144,12 +149,10 @@ export function RestaurantDashboard() {
             <Leaf size={22} className="text-[#6BA534]" /> Floresta Já
           </Link>
           <div className="flex items-center gap-3">
-            {restaurant && (
-              <Link to={`/restaurantes/${restaurant.id}`}
-                className="text-sm text-[#777] hover:text-[#2D5016] flex items-center gap-1 transition-colors">
-                <Eye size={15} /> Ver página
-              </Link>
-            )}
+            <Link to="/restaurantes"
+              className="text-sm text-[#777] hover:text-[#2D5016] flex items-center gap-1 transition-colors">
+              <Eye size={15} /> Ver restaurantes
+            </Link>
             <button onClick={async () => { await logout(); navigate('/login'); }}
               className="text-sm text-[#777] hover:text-[#333] flex items-center gap-1 transition-colors">
               <LogOut size={15} /> Sair
