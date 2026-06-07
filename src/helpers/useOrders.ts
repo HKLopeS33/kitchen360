@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 export type OrderStatus = 'awaiting_payment' | 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
@@ -30,10 +30,13 @@ export interface Order {
 export function useRestaurantOrders(restaurantId: string | null) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const loadedOnce = useRef(false);
 
   const fetch = useCallback(async () => {
     if (!restaurantId) { setIsLoading(false); return; }
-    setIsLoading(true);
+    // Só mostra o estado de carregamento na primeira busca — atualizações
+    // em segundo plano (polling/realtime) não devem "piscar" a tela
+    if (!loadedOnce.current) setIsLoading(true);
     const { data } = await supabase
       .from('orders')
       .select('*')
@@ -42,6 +45,7 @@ export function useRestaurantOrders(restaurantId: string | null) {
       .neq('status', 'awaiting_payment')
       .order('created_at', { ascending: false });
     setOrders((data as Order[]) ?? []);
+    loadedOnce.current = true;
     setIsLoading(false);
   }, [restaurantId]);
 
@@ -152,16 +156,18 @@ export async function createOrder(payload: {
 export function useClientOrders(clientId: string | null) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const loadedOnce = useRef(false);
 
   const fetch = useCallback(async () => {
     if (!clientId) { setIsLoading(false); return; }
-    setIsLoading(true);
+    if (!loadedOnce.current) setIsLoading(true);
     const { data } = await supabase
       .from('orders')
       .select('*')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
     setOrders((data as Order[]) ?? []);
+    loadedOnce.current = true;
     setIsLoading(false);
   }, [clientId]);
 
@@ -201,10 +207,11 @@ export function useOrderTracking(orderId: string | null) {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const loadedOnce = useRef(false);
 
   const fetch = useCallback(async () => {
     if (!orderId) { setIsLoading(false); return; }
-    setIsLoading(true);
+    if (!loadedOnce.current) setIsLoading(true);
     const { data } = await supabase
       .from('orders')
       .select('*')
@@ -212,6 +219,7 @@ export function useOrderTracking(orderId: string | null) {
       .maybeSingle();
     if (data) setOrder(data as Order);
     else setNotFound(true);
+    loadedOnce.current = true;
     setIsLoading(false);
   }, [orderId]);
 
