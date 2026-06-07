@@ -77,11 +77,18 @@ export function useRestaurantOrders(restaurantId: string | null) {
   }, [restaurantId, fetch]);
 
   const updateStatus = async (orderId: string, status: OrderStatus) => {
+    // Atualização otimista: muda o status na tela imediatamente,
+    // sem esperar o roundtrip do servidor/realtime/polling
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
     const { error } = await supabase
       .from('orders')
       .update({ status })
       .eq('id', orderId);
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Reverte em caso de falha
+      await fetch();
+      throw new Error(error.message);
+    }
   };
 
   const activeOrders = orders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status));
