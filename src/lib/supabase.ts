@@ -16,6 +16,7 @@ export interface Profile {
   email: string;
   name: string;
   role: UserRole;
+  address: string;
   created_at: string;
 }
 

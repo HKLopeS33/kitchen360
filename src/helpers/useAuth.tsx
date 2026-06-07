@@ -4,8 +4,9 @@ import { supabase, type Profile, type UserRole } from '../lib/supabase';
 interface AuthContextType {
   user: Profile | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole, address?: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: { name?: string; address?: string }) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -71,11 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw new Error('Email ou senha incorretos');
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole) => {
+  const register = async (name: string, email: string, password: string, role: UserRole, address?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, role } },
+      options: { data: { name, role, address: address ?? '' } },
     });
     if (error) throw new Error(error.message);
   };
@@ -84,8 +85,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const updateProfile = async (data: { name?: string; address?: string }) => {
+    if (!user) throw new Error('Não autenticado');
+    const { data: updated, error } = await supabase
+      .from('profiles')
+      .update(data)
+      .eq('id', user.id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    if (mounted.current) setUser(updated as Profile);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateProfile, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

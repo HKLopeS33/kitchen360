@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Minus, Plus, Trash2, ShoppingCart, ArrowLeft, Store,
@@ -26,7 +26,12 @@ export function Cart() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(user?.address ?? '');
+
+  // Preenche automaticamente com o endereço cadastrado no perfil do cliente
+  useEffect(() => {
+    if (user?.address && !address) setAddress(user.address);
+  }, [user]);
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [loading, setLoading] = useState(false);

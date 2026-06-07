@@ -129,6 +129,54 @@ export async function createOrder(payload: {
   return data as Order;
 }
 
+// Hook para o CLIENTE ver seu histórico de pedidos
+export function useClientOrders(clientId: string | null) {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetch = useCallback(async () => {
+    if (!clientId) { setIsLoading(false); return; }
+    setIsLoading(true);
+    const { data } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+    setOrders((data as Order[]) ?? []);
+    setIsLoading(false);
+  }, [clientId]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  useEffect(() => {
+    if (!clientId) return;
+    const channel = supabase
+      .channel(`orders-client-${clientId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `client_id=eq.${clientId}`,
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setOrders(prev => [payload.new as Order, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new as Order : o));
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [clientId]);
+
+  useEffect(() => {
+    if (!clientId) return;
+    const interval = setInterval(() => { fetch(); }, 15000);
+    return () => clearInterval(interval);
+  }, [clientId, fetch]);
+
+  return { orders, isLoading, refetch: fetch };
+}
+
 // Hook para o CLIENTE acompanhar um pedido específico em tempo real
 export function useOrderTracking(orderId: string | null) {
   const [order, setOrder] = useState<Order | null>(null);

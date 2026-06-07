@@ -10,6 +10,7 @@ export function Register() {
   const { register, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('client');
@@ -29,7 +30,7 @@ export function Register() {
     if (password.length < 6) { toast.error('Senha deve ter pelo menos 6 caracteres'); return; }
     setLoading(true);
     try {
-      await register(name, email, password, role);
+      await register(name, email, password, role, role === 'client' ? address.trim() : undefined);
       setPendingRole(role);
       toast.success('Conta criada com sucesso!');
     } catch (err: any) {
@@ -90,6 +91,17 @@ export function Register() {
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
               />
             </div>
+            {role === 'client' && (
+              <div>
+                <label className="block text-sm font-semibold text-[#333] mb-1.5">Endereço de entrega</label>
+                <input
+                  value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, bairro..."
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
+                />
+                <p className="text-xs text-[#aaa] mt-1">Será usado automaticamente nos seus pedidos. Você pode alterá-lo depois.</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-semibold text-[#333] mb-1.5">Email</label>
               <input

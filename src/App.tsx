@@ -10,6 +10,8 @@ import { RestaurantDashboard } from './pages/RestaurantDashboard';
 import { RestaurantMenu } from './pages/RestaurantMenu';
 import { PaymentStatus } from './pages/PaymentStatus';
 import { OrderTracking } from './pages/OrderTracking';
+import { ClientOrders } from './pages/ClientOrders';
+import { ClientAccount } from './pages/ClientAccount';
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
             <Route path="/meu-restaurante" element={<RestaurantDashboard />} />
             <Route path="/pedido-status" element={<PaymentStatus />} />
             <Route path="/pedido/:id" element={<OrderTracking />} />
+            <Route path="/meus-pedidos" element={<ClientOrders />} />
+            <Route path="/meus-dados" element={<ClientAccount />} />
             {/* Rota coringa */}
             <Route path="*" element={<Navigate to="/restaurantes" replace />} />
           </Routes>

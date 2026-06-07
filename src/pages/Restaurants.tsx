@@ -1,5 +1,5 @@
-import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart } from 'lucide-react';
-import { useState } from 'react';
+import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, Package, User, LogOut } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Leaf } from 'lucide-react';
 import { useRestaurants } from '../helpers/useRestaurants';
@@ -17,6 +17,16 @@ export function Restaurants() {
   const { totalItems } = useCart();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category | 'todos'>('todos');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
 
   const filtered = restaurants.filter(r =>
     (category === 'todos' || r.category === category) &&
@@ -44,16 +54,46 @@ export function Restaurants() {
             )}
 
             {user ? (
-              <>
-                {user.role === 'restaurant_owner' && (
+              user.role === 'restaurant_owner' ? (
+                <>
                   <Link to="/meu-restaurante" className="flex items-center gap-1.5 text-sm font-semibold text-[#2D5016] hover:underline">
                     <UtensilsCrossed size={15} /> Meu estabelecimento
                   </Link>
-                )}
-                <button onClick={logout} className="text-sm text-[#777] hover:text-[#333] transition-colors">
-                  Sair
-                </button>
-              </>
+                  <button onClick={logout} className="text-sm text-[#777] hover:text-[#333] transition-colors">
+                    Sair
+                  </button>
+                </>
+              ) : (
+                <div className="relative" ref={menuRef}>
+                  <button
+                    onClick={() => setMenuOpen(o => !o)}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-[#2D5016] hover:bg-[#e8f5e0] px-2.5 py-1.5 rounded-xl transition-colors"
+                  >
+                    <User size={15} />
+                    <span className="max-w-[100px] truncate">{user.name?.split(' ')[0] ?? 'Conta'}</span>
+                    <ChevronDown size={14} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {menuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-20">
+                      <Link to="/meus-pedidos" onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#444] hover:bg-[#f7f5f0] transition-colors">
+                        <Package size={15} className="text-[#6BA534]" /> Pedidos
+                      </Link>
+                      <Link to="/meus-dados" onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#444] hover:bg-[#f7f5f0] transition-colors">
+                        <MapPin size={15} className="text-[#6BA534]" /> Endereço
+                      </Link>
+                      <div className="border-t border-gray-100 my-1" />
+                      <button
+                        onClick={() => { setMenuOpen(false); logout(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut size={15} /> Sair
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
             ) : (
               <Link to="/login" className="text-sm font-semibold text-[#2D5016] hover:underline">
                 Entrar
