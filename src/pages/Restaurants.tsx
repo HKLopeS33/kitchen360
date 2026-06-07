@@ -106,8 +106,10 @@ export function Restaurants() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6 flex items-center">
-          <Search size={17} className="absolute left-4 text-[#aaa] pointer-events-none" />
+        <div className="relative mb-6">
+          <span className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <Search size={17} className="text-[#aaa]" />
+          </span>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
