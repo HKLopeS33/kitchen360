@@ -1,9 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Quando o pagamento é aprovado, o pedido sai de "aguardando pagamento"
+// e entra na fila do estabelecimento como "pending" (recém-recebido).
+// Pagamentos ainda pendentes mantêm o pedido invisível ao estabelecimento.
 const statusMap: Record<string, string> = {
-  approved:   'preparing',
-  pending:    'pending',
-  in_process: 'pending',
+  approved:   'pending',
+  pending:    'awaiting_payment',
+  in_process: 'awaiting_payment',
   rejected:   'cancelled',
   cancelled:  'cancelled',
   refunded:   'cancelled',

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useRestaurantOrders, type Order, type OrderStatus } from '../helpers/useOrders';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
+  awaiting_payment: 'Aguardando pagamento',
   pending:   'Aguardando',
   preparing: 'Preparando',
   ready:     'Pronto',
@@ -12,6 +13,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
+  awaiting_payment: 'bg-orange-50 text-orange-600 border-orange-200',
   pending:   'bg-yellow-50 text-yellow-700 border-yellow-200',
   preparing: 'bg-blue-50 text-blue-700 border-blue-200',
   ready:     'bg-[#e8f5e0] text-[#2D5016] border-[#b5dcaa]',

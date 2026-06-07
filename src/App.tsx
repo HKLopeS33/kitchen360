@@ -12,6 +12,7 @@ import { PaymentStatus } from './pages/PaymentStatus';
 import { OrderTracking } from './pages/OrderTracking';
 import { ClientOrders } from './pages/ClientOrders';
 import { ClientAccount } from './pages/ClientAccount';
+import { PaymentWaiting } from './pages/PaymentWaiting';
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/meu-restaurante" element={<RestaurantDashboard />} />
             <Route path="/pedido-status" element={<PaymentStatus />} />
             <Route path="/pedido/:id" element={<OrderTracking />} />
+            <Route path="/pagamento-pendente/:id" element={<PaymentWaiting />} />
             <Route path="/meus-pedidos" element={<ClientOrders />} />
             <Route path="/meus-dados" element={<ClientAccount />} />
             {/* Rota coringa */}

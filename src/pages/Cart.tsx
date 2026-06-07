@@ -102,10 +102,12 @@ export function Cart() {
       // Importante: para métodos assíncronos (PIX, boleto) o MP NÃO redireciona
       // automaticamente de volta ao site após o pagamento — o cliente só vê a
       // confirmação dentro do próprio checkout. Por isso já levamos o cliente
-      // para a tela de acompanhamento do pedido nesta aba, garantindo que ele
-      // sempre veja o status do pedido independente do comportamento do MP.
+      // para uma tela de "aguardando pagamento" nesta aba: o pedido só é
+      // enviado ao estabelecimento quando o pagamento é confirmado (webhook),
+      // e assim que isso acontecer o cliente é levado automaticamente para
+      // o acompanhamento do pedido.
       window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
-      navigate(`/pedido/${order.id}`, { replace: true });
+      navigate(`/pagamento-pendente/${order.id}`, { replace: true });
 
     } catch (err: any) {
       toast.error(err.message || 'Erro ao finalizar pedido');

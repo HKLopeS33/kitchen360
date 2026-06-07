@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+export type OrderStatus = 'awaiting_payment' | 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 
 export interface OrderItem {
   id: string;
@@ -38,6 +38,8 @@ export function useRestaurantOrders(restaurantId: string | null) {
       .from('orders')
       .select('*')
       .eq('restaurant_id', restaurantId)
+      // Pedidos com pagamento ainda não confirmado não são exibidos ao estabelecimento
+      .neq('status', 'awaiting_payment')
       .order('created_at', { ascending: false });
     setOrders((data as Order[]) ?? []);
     setIsLoading(false);
@@ -57,9 +59,23 @@ export function useRestaurantOrders(restaurantId: string | null) {
         filter: `restaurant_id=eq.${restaurantId}`,
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setOrders(prev => [payload.new as Order, ...prev]);
+          const newOrder = payload.new as Order;
+          // Só exibe ao estabelecimento se o pagamento já foi confirmado
+          if (newOrder.status !== 'awaiting_payment') {
+            setOrders(prev => [newOrder, ...prev]);
+          }
         } else if (payload.eventType === 'UPDATE') {
-          setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new as Order : o));
+          const updated = payload.new as Order;
+          setOrders(prev => {
+            const exists = prev.some(o => o.id === updated.id);
+            if (updated.status === 'awaiting_payment') {
+              // Continua oculto enquanto aguarda pagamento
+              return prev.filter(o => o.id !== updated.id);
+            }
+            if (exists) return prev.map(o => o.id === updated.id ? updated : o);
+            // Pedido acabou de ter o pagamento confirmado: passa a aparecer
+            return [updated, ...prev];
+          });
         } else if (payload.eventType === 'DELETE') {
           setOrders(prev => prev.filter(o => o.id !== (payload.old as Order).id));
         }
@@ -121,7 +137,10 @@ export async function createOrder(payload: {
       delivery_address: payload.deliveryAddress,
       notes: payload.notes ?? '',
       payment_method: payload.paymentMethod ?? 'pix',
-      status: 'pending',
+      // O pedido só é enviado ao estabelecimento após a confirmação do pagamento
+      // (o webhook do Mercado Pago muda para 'pending' quando aprovado)
+      status: 'awaiting_payment',
+      payment_status: 'pending',
     })
     .select()
     .single();

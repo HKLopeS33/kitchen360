@@ -4,6 +4,7 @@ import { useAuth } from '../helpers/useAuth';
 import { useClientOrders, type OrderStatus } from '../helpers/useOrders';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
+  awaiting_payment: 'Aguardando pagamento',
   pending: 'Aguardando',
   preparing: 'Preparando',
   ready: 'Pronto / a caminho',
@@ -12,6 +13,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
+  awaiting_payment: 'bg-orange-50 text-orange-600',
   pending: 'bg-yellow-50 text-yellow-700',
   preparing: 'bg-blue-50 text-blue-700',
   ready: 'bg-[#e8f5e0] text-[#2D5016]',
@@ -61,7 +63,7 @@ export function ClientOrders() {
             {orders.map(order => (
               <Link
                 key={order.id}
-                to={`/pedido/${order.id}`}
+                to={order.status === 'awaiting_payment' ? `/pagamento-pendente/${order.id}` : `/pedido/${order.id}`}
                 className="block bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-4"
               >
                 <div className="flex items-center justify-between gap-3">

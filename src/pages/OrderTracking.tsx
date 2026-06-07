@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import {
   CheckCircle2, Clock, ChefHat, PackageCheck, Truck, XCircle,
   ArrowLeft, MapPin, Store, Leaf,
@@ -12,7 +12,7 @@ const STEPS: { key: OrderStatus; label: string; desc: string; icon: React.ReactN
   { key: 'delivered', label: 'Entregue',          desc: 'Pedido entregue. Bom apetite! 🎉',                                      icon: <PackageCheck size={20} /> },
 ];
 
-const STEP_INDEX: Record<OrderStatus, number> = { pending: 0, preparing: 1, ready: 2, delivered: 3, cancelled: -1 };
+const STEP_INDEX: Record<OrderStatus, number> = { awaiting_payment: -1, pending: 0, preparing: 1, ready: 2, delivered: 3, cancelled: -1 };
 
 function formatPrice(p: number) { return `R$ ${Number(p).toFixed(2).replace('.', ',')}`; }
 function formatDate(d: string) {
@@ -39,6 +39,10 @@ export function OrderTracking() {
         <Link to="/restaurantes" className="text-[#2D5016] font-semibold hover:underline">Voltar aos estabelecimentos</Link>
       </div>
     );
+  }
+
+  if (order.status === 'awaiting_payment') {
+    return <Navigate to={`/pagamento-pendente/${order.id}`} replace />;
   }
 
   const cancelled = order.status === 'cancelled';
