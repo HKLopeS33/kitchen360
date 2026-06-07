@@ -1,4 +1,5 @@
-import { useSearchParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, ArrowLeft, MapPin } from 'lucide-react';
 
 const config = {
@@ -27,10 +28,24 @@ const config = {
 
 export function PaymentStatus() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const status = (params.get('status') ?? 'falha') as keyof typeof config;
   const orderNum = params.get('order');
   const orderId = params.get('orderId');
   const cfg = config[status] ?? config.falha;
+
+  const willRedirect = !!orderId && (status === 'sucesso' || status === 'pendente');
+  const [count, setCount] = useState(3);
+
+  useEffect(() => {
+    if (!willRedirect) return;
+    if (count <= 0) {
+      navigate(`/pedido/${orderId}`, { replace: true });
+      return;
+    }
+    const t = setTimeout(() => setCount(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [willRedirect, count, orderId, navigate]);
 
   return (
     <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-4">
@@ -40,18 +55,24 @@ export function PaymentStatus() {
         {orderNum && (
           <p className="text-sm font-semibold text-[#555] mb-2">Pedido #{orderNum}</p>
         )}
-        <p className="text-sm text-[#666] mb-8">{cfg.desc}</p>
+        <p className="text-sm text-[#666] mb-2">{cfg.desc}</p>
 
-        <div className="space-y-3">
-          {orderId && (status === 'sucesso' || status === 'pendente') && (
+        {willRedirect && (
+          <p className="text-xs text-[#888] mb-6">
+            Redirecionando para o acompanhamento do pedido em {count}s...
+          </p>
+        )}
+
+        <div className={`space-y-3 ${willRedirect ? '' : 'mt-6'}`}>
+          {willRedirect && (
             <Link to={`/pedido/${orderId}`}
               className="flex items-center justify-center gap-2 bg-[#2D5016] text-white font-semibold px-6 py-3 rounded-xl hover:bg-[#3d6b1e] transition-colors">
-              <MapPin size={16} /> Acompanhar pedido
+              <MapPin size={16} /> Acompanhar pedido agora
             </Link>
           )}
           <Link to="/restaurantes"
             className={`flex items-center justify-center gap-2 font-semibold px-6 py-3 rounded-xl transition-colors ${
-              orderId && (status === 'sucesso' || status === 'pendente')
+              willRedirect
                 ? 'bg-white text-[#2D5016] hover:bg-gray-50'
                 : 'bg-[#2D5016] text-white hover:bg-[#3d6b1e]'
             }`}>
