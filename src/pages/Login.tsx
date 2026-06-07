@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, Eye, EyeOff } from 'lucide-react';
+import { Leaf, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
 import { Button } from '../components/Button';
@@ -36,15 +36,31 @@ export function Login() {
   if (isLoading) return null;
 
   return (
-    <div className="min-h-screen bg-[#f7f5f0] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <Link to="/restaurantes" className="flex items-center justify-center gap-2 text-[#2D5016] font-bold text-xl mb-8 animate-fade-in-up">
-          <Leaf size={24} className="text-[#6BA534]" /> Floresta Já
-        </Link>
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-[#1f3d0f] via-[#2D5016] to-[#4a8526]">
+      {/* Formas decorativas de fundo */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 -left-24 w-80 h-80 rounded-full bg-[#6BA534]/25 blur-3xl" />
+        <div className="absolute -bottom-40 -right-28 w-96 h-96 rounded-full bg-[#9fd66c]/20 blur-3xl" />
+        <div className="absolute top-1/3 right-10 w-40 h-40 rounded-full bg-white/5 blur-2xl" />
+        <Leaf size={140} className="absolute -bottom-8 -left-10 text-white/5 rotate-[-18deg]" />
+        <Leaf size={100} className="absolute top-10 right-16 text-white/5 rotate-[24deg]" />
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8 animate-scale-in">
-          <h1 className="text-2xl font-black text-[#1a1a1a] mb-1">Entrar</h1>
-          <p className="text-sm text-[#6BA534] mb-6">Floresta - PE</p>
+      <div className="relative w-full max-w-sm">
+        {/* Identidade visual / logo */}
+        <div className="flex flex-col items-center mb-8 animate-fade-in-up">
+          <div className="w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-4 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
+            <Leaf size={40} className="text-[#bfe8a0]" strokeWidth={2.2} />
+          </div>
+          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
+            Floresta Já <Sparkles size={16} className="text-[#bfe8a0]" />
+          </h1>
+          <p className="text-sm text-[#cfe9b8] font-medium mt-0.5">Sabores de Floresta - PE, na sua porta</p>
+        </div>
+
+        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_24px_64px_rgba(15,30,8,0.35)] p-8 animate-scale-in border border-white/40">
+          <h2 className="text-2xl font-black text-[#1a1a1a] mb-1">Bem-vindo de volta</h2>
+          <p className="text-sm text-[#6BA534] font-semibold mb-6">Entre na sua conta para continuar</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -52,7 +68,7 @@ export function Login() {
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="seu@email.com" required
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
+                className="w-full border-2 border-[#e3ede0] rounded-xl px-4 py-3 text-sm outline-none focus:border-[#6BA534] focus:ring-4 focus:ring-[#6BA534]/12 transition-all"
               />
             </div>
 
@@ -62,9 +78,9 @@ export function Login() {
                 <input
                   type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••" required
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
+                  className="w-full border-2 border-[#e3ede0] rounded-xl px-4 py-3 pr-11 text-sm outline-none focus:border-[#6BA534] focus:ring-4 focus:ring-[#6BA534]/12 transition-all"
                 />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#555]">
+                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#2D5016] transition-colors">
                   {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </div>
@@ -75,9 +91,13 @@ export function Login() {
 
           <p className="text-center text-sm text-[#777] mt-5">
             Não tem conta?{' '}
-            <Link to="/register" className="text-[#2D5016] font-semibold hover:underline">Criar conta</Link>
+            <Link to="/register" className="text-[#2D5016] font-bold hover:underline">Criar conta</Link>
           </p>
         </div>
+
+        <Link to="/restaurantes" className="block text-center text-sm text-[#cfe9b8] hover:text-white font-medium mt-6 transition-colors">
+          ← Continuar explorando sem entrar
+        </Link>
       </div>
     </div>
   );
