@@ -106,13 +106,38 @@ export function Restaurants() {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Title */}
-        <div className="mb-7 animate-fade-in-up">
+        <div className="mb-5 animate-fade-in-up">
           <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-[#2D5016] via-[#4a8526] to-[#6BA534] bg-clip-text text-transparent drop-shadow-sm">{title}</h1>
           <div className="flex items-center gap-1.5 mt-1.5">
             <span className="flex items-center gap-1 bg-[#e8f5e0] text-[#2D5016] text-xs font-bold px-2.5 py-1 rounded-full">
               <MapPin size={12} />
               Floresta - PE
             </span>
+          </div>
+        </div>
+
+        {/* Resumo rápido */}
+        <div className="grid grid-cols-3 gap-3 mb-7 animate-fade-in-up">
+          <div className="bg-white rounded-2xl p-3.5 shadow-[0_2px_14px_rgba(20,40,10,0.06)] flex flex-col gap-1">
+            <div className="w-8 h-8 rounded-xl bg-[#e8f5e0] flex items-center justify-center">
+              <UtensilsCrossed size={15} className="text-[#2D5016]" />
+            </div>
+            <span className="text-lg font-black text-[#1a1a1a] leading-none mt-0.5">{restaurants.length}</span>
+            <span className="text-[11px] text-[#999] font-medium">Estabelecimentos</span>
+          </div>
+          <div className="bg-white rounded-2xl p-3.5 shadow-[0_2px_14px_rgba(20,40,10,0.06)] flex flex-col gap-1">
+            <div className="w-8 h-8 rounded-xl bg-[#e8f5e0] flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-[#6BA534] animate-pulse" />
+            </div>
+            <span className="text-lg font-black text-[#1a1a1a] leading-none mt-0.5">{restaurants.filter(r => r.is_open_today).length}</span>
+            <span className="text-[11px] text-[#999] font-medium">Abertos agora</span>
+          </div>
+          <div className="bg-white rounded-2xl p-3.5 shadow-[0_2px_14px_rgba(20,40,10,0.06)] flex flex-col gap-1">
+            <div className="w-8 h-8 rounded-xl bg-[#e8f5e0] flex items-center justify-center">
+              <MapPin size={15} className="text-[#2D5016]" />
+            </div>
+            <span className="text-lg font-black text-[#1a1a1a] leading-none mt-0.5">Floresta</span>
+            <span className="text-[11px] text-[#999] font-medium">Pernambuco</span>
           </div>
         </div>
 

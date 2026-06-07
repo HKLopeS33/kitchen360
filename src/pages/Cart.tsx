@@ -167,43 +167,61 @@ export function Cart() {
         )}
 
         {/* Itens */}
-        <div className="space-y-3">
+        <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(20,40,10,0.06)] divide-y divide-[#f0f2ec] overflow-hidden animate-fade-in-up">
           {items.map(({ item, quantity }, idx) => (
-            <div key={item.id} style={{ animationDelay: `${idx * 50}ms` }} className="bg-white rounded-2xl p-4 flex gap-4 shadow-sm card-hover animate-fade-in-up">
-              {item.image_url && (
-                <img src={item.image_url} alt={item.name} className="w-20 h-20 object-cover rounded-xl shrink-0" />
+            <div key={item.id} style={{ animationDelay: `${idx * 50}ms` }} className="flex items-center gap-3 p-4 animate-fade-in-up">
+              {item.image_url ? (
+                <img src={item.image_url} alt={item.name} className="w-14 h-14 object-cover rounded-2xl shrink-0 ring-1 ring-[#f0f2ec]" />
+              ) : (
+                <div className="w-14 h-14 rounded-2xl bg-[#e8f5e0] flex items-center justify-center shrink-0">
+                  <ShoppingCart size={20} className="text-[#6BA534]" />
+                </div>
               )}
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-[#1a1a1a] truncate">{item.name}</h3>
-                <p className="text-xs text-[#6BA534] font-medium mt-0.5">{item.category}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => updateQty(item.id, quantity - 1)}
-                      className="w-8 h-8 rounded-xl bg-[#e8f5e0] text-[#2D5016] flex items-center justify-center hover:bg-[#d0edc0] transition-colors">
-                      <Minus size={14} />
-                    </button>
-                    <span className="font-black text-[#2D5016] w-5 text-center">{quantity}</span>
-                    <button onClick={() => updateQty(item.id, quantity + 1)}
-                      className="w-8 h-8 rounded-xl bg-[#2D5016] text-white flex items-center justify-center hover:bg-[#3d6b1e] transition-colors">
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-[#2D5016]">{formatPrice(Number(item.price) * quantity)}</span>
-                    <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-red-400 transition-colors">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
+                <h3 className="font-bold text-[#1a1a1a] text-sm truncate">{item.name}</h3>
+                <p className="text-xs text-[#aaa] font-medium mt-0.5">{formatPrice(Number(item.price))} · un.</p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 bg-[#f7f5f0] rounded-full p-1">
+                <button onClick={() => updateQty(item.id, quantity - 1)}
+                  className="w-7 h-7 rounded-full bg-white text-[#2D5016] flex items-center justify-center shadow-sm hover:bg-[#e8f5e0] transition-colors">
+                  <Minus size={13} />
+                </button>
+                <span className="font-black text-[#2D5016] w-5 text-center text-sm">{quantity}</span>
+                <button onClick={() => updateQty(item.id, quantity + 1)}
+                  className="w-7 h-7 rounded-full bg-[#2D5016] text-white flex items-center justify-center shadow-sm hover:bg-[#3d6b1e] transition-colors">
+                  <Plus size={13} />
+                </button>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0 w-20">
+                <span className="font-black text-[#2D5016] text-sm">{formatPrice(Number(item.price) * quantity)}</span>
+                <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-red-400 transition-colors">
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           ))}
         </div>
 
+        {/* Resumo de valores */}
+        <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(20,40,10,0.06)] p-5 space-y-2.5 animate-fade-in-up">
+          <div className="flex justify-between text-sm">
+            <span className="text-[#999] font-medium">Subtotal</span>
+            <span className="text-[#444] font-semibold">{formatPrice(totalPrice)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-[#999] font-medium">Taxa de entrega</span>
+            <span className="text-[#6BA534] font-semibold">A combinar</span>
+          </div>
+          <div className="border-t border-dashed border-[#e3ede0] pt-2.5 flex justify-between items-center">
+            <span className="text-[#1a1a1a] font-bold">Total</span>
+            <span className="text-2xl font-black text-[#2D5016]">{formatPrice(totalPrice)}</span>
+          </div>
+        </div>
+
         {/* Checkout */}
-        <form onSubmit={handleCheckout} className="bg-white rounded-2xl p-6 shadow-sm space-y-5 animate-fade-in-up">
+        <form onSubmit={handleCheckout} className="bg-white rounded-3xl p-6 shadow-[0_2px_16px_rgba(20,40,10,0.06)] space-y-5 animate-fade-in-up">
           <h2 className="font-black text-[#1a1a1a] text-lg flex items-center gap-2">
-            <FileText size={18} className="text-[#6BA534]" /> Finalizar Pedido
+            <FileText size={18} className="text-[#6BA534]" /> Dados da entrega
           </h2>
 
           {/* Endereço */}
@@ -256,19 +274,13 @@ export function Cart() {
             </div>
           </div>
 
-          {/* Total */}
-          <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
-            <span className="text-[#666] font-medium">Total</span>
-            <span className="text-2xl font-black text-[#2D5016]">{formatPrice(totalPrice)}</span>
-          </div>
-
           {!user && (
             <p className="text-xs text-orange-500 text-center">
               <Link to="/login" className="underline font-semibold">Entre</Link> para finalizar o pedido
             </p>
           )}
 
-          <Button type="submit" fullWidth loading={loading} size="lg">
+          <Button type="submit" fullWidth loading={loading} size="lg" className="!rounded-full">
             {loading ? 'Processando...' : `Pagar ${formatPrice(totalPrice)}`}
           </Button>
 
