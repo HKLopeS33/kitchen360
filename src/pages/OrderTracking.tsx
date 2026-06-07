@@ -88,33 +88,40 @@ export function OrderTracking() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm p-6">
-            <div className="space-y-0">
-              {STEPS.map((step, i) => {
-                const done = i <= currentIndex;
-                const active = i === currentIndex;
-                const isLast = i === STEPS.length - 1;
-                return (
-                  <div key={step.key} className="flex gap-4">
-                    {/* Indicador + linha */}
-                    <div className="flex flex-col items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+            <div className="relative">
+              {/* Linha vertical contínua de fundo */}
+              <div className="absolute left-5 top-5 bottom-5 w-0.5 bg-gray-100 -translate-x-1/2" />
+              {/* Linha vertical de progresso */}
+              {currentIndex > 0 && (
+                <div
+                  className="absolute left-5 top-5 w-0.5 bg-[#2D5016] -translate-x-1/2 transition-all"
+                  style={{ height: `calc(${(currentIndex / (STEPS.length - 1)) * 100}% - ${currentIndex === STEPS.length - 1 ? '40px' : '0px'})` }}
+                />
+              )}
+              <div className="space-y-7 relative">
+                {STEPS.map((step, i) => {
+                  const done = i <= currentIndex;
+                  const active = i === currentIndex;
+                  return (
+                    <div key={step.key} className="flex items-center gap-4">
+                      {/* Indicador */}
+                      <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                         done ? 'bg-[#2D5016] text-white' : 'bg-gray-100 text-gray-300'
                       } ${active ? 'ring-4 ring-[#e8f5e0]' : ''}`}>
                         {step.icon}
                       </div>
-                      {!isLast && <div className={`w-0.5 flex-1 min-h-[28px] ${done && i < currentIndex ? 'bg-[#2D5016]' : 'bg-gray-100'}`} />}
+                      {/* Texto */}
+                      <div>
+                        <p className={`font-bold text-sm leading-tight ${done ? 'text-[#1a1a1a]' : 'text-[#bbb]'}`}>
+                          {step.label}
+                          {active && <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold text-[#6BA534] uppercase tracking-wide align-middle"><Clock size={11} className="animate-pulse" /> Agora</span>}
+                        </p>
+                        <p className={`text-xs mt-0.5 leading-snug ${done ? 'text-[#888]' : 'text-[#ccc]'}`}>{step.desc}</p>
+                      </div>
                     </div>
-                    {/* Texto */}
-                    <div className={`pb-7 ${isLast ? 'pb-0' : ''}`}>
-                      <p className={`font-bold text-sm ${done ? 'text-[#1a1a1a]' : 'text-[#bbb]'}`}>
-                        {step.label}
-                        {active && <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold text-[#6BA534] uppercase tracking-wide"><Clock size={11} className="animate-pulse" /> Agora</span>}
-                      </p>
-                      <p className={`text-xs mt-0.5 ${done ? 'text-[#888]' : 'text-[#ccc]'}`}>{step.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
