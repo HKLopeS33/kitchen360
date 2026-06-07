@@ -64,7 +64,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
           <Li>Solicitar uma cópia dos dados que mantemos sobre você;</Li>
           <Li>Revogar consentimentos dados anteriormente.</Li>
         </ul>
-        <P>Para exercer esses direitos, entre em contato pelo e-mail <strong>privacidade@florestaja.com.br</strong>.</P>
+        <P>Para exercer esses direitos, entre em contato pelo e-mail <strong>contatoflorestaja@hotmail.com</strong>.</P>
 
         <SectionTitle>5. Segurança</SectionTitle>
         <P>
@@ -82,7 +82,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         <SectionTitle>7. Contato</SectionTitle>
         <P>
           Dúvidas sobre privacidade e proteção de dados? Fale conosco em
-          <strong> privacidade@florestaja.com.br</strong>.
+          <strong> contatoflorestaja@hotmail.com</strong>.
         </P>
       </>
     ),
@@ -125,8 +125,8 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
 
         <SectionTitle>Não encontrou o que procurava?</SectionTitle>
         <P>
-          Fale com a nossa equipe de suporte pelo e-mail <strong>suporte@florestaja.com.br</strong> ou
-          pelo WhatsApp <strong>(87) 99999-0000</strong>. Respondemos em horário comercial, de
+          Fale com a nossa equipe de suporte pelo e-mail <strong>contatoflorestaja@hotmail.com</strong> ou
+          pelo WhatsApp <strong>(87) 99971-0850</strong>. Respondemos em horário comercial, de
           segunda a sábado.
         </P>
       </>
@@ -144,8 +144,8 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         </P>
         <SectionTitle>Canais de atendimento</SectionTitle>
         <ul>
-          <Li><strong>E-mail:</strong> suporte@florestaja.com.br</Li>
-          <Li><strong>WhatsApp:</strong> (87) 99999-0000</Li>
+          <Li><strong>E-mail:</strong> contatoflorestaja@hotmail.com</Li>
+          <Li><strong>WhatsApp:</strong> (87) 99971-0850</Li>
           <Li><strong>Horário de atendimento:</strong> Segunda a sábado, das 8h às 18h</Li>
         </ul>
         <SectionTitle>Antes de entrar em contato</SectionTitle>
@@ -186,7 +186,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         </P>
         <SectionTitle>Fale com nosso time comercial</SectionTitle>
         <P>
-          E-mail: <strong>parcerias@florestaja.com.br</strong> · WhatsApp: <strong>(87) 99999-0001</strong>
+          E-mail: <strong>contatoflorestaja@hotmail.com</strong> · WhatsApp: <strong>(87) 99971-0850</strong>
         </P>
       </>
     ),
@@ -210,7 +210,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         <SectionTitle>Como se candidatar</SectionTitle>
         <P>
           Envie seu currículo (ou uma breve apresentação, no caso de entregadores) para
-          <strong> trabalheconosco@florestaja.com.br</strong>, informando a vaga de interesse no
+          <strong> contatoflorestaja@hotmail.com</strong>, informando a vaga de interesse no
           assunto do e-mail.
         </P>
       </>
