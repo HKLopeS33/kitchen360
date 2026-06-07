@@ -52,9 +52,7 @@ export function Register() {
 
       <div className="relative w-full max-w-sm">
         <div className="flex flex-col items-center mb-6 animate-fade-in-up">
-          <div className="w-28 h-28 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-3 shadow-[0_8px_32px_rgba(0,0,0,0.25)] p-4">
-            <img src={logo} alt="Floresta Já" className="w-full h-full object-contain drop-shadow-lg" />
-          </div>
+          <img src={logo} alt="Floresta Já" className="w-32 h-32 object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] mb-2" />
           <h1 className="text-2xl font-black text-white tracking-tight">Floresta Já</h1>
           <p className="text-sm text-[#cfe9b8] font-medium mt-0.5">Sabores de Floresta - PE, na sua porta</p>
         </div>
