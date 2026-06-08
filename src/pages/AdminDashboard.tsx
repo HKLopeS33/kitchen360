@@ -161,64 +161,54 @@ export function AdminDashboard() {
               const remaining = daysLeft(refDate);
               const expired = remaining !== null && remaining < 0;
 
+              const dayLabel = remaining === null ? '' : expired
+                ? (isTrial ? 'expirado' : 'vencido')
+                : `${remaining}d restante${remaining === 1 ? '' : 's'}`;
+
               return (
                 <div key={r.id} style={{ animationDelay: `${idx * 40}ms` }}
-                  className="bg-white rounded-2xl shadow-[0_2px_14px_rgba(20,40,10,0.06)] p-4 animate-fade-in-up">
-                  <div className="flex items-start justify-between gap-3">
+                  className="bg-white rounded-xl shadow-[0_1px_8px_rgba(20,40,10,0.05)] px-3.5 py-3 animate-fade-in-up">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <h3 className="font-bold text-[#1a1a1a] truncate">{r.name}</h3>
-                      <p className="text-xs text-[#999] truncate">{r.owner_name ?? '—'} · {r.owner_email ?? '—'}</p>
+                      <h3 className="font-bold text-[#1a1a1a] text-sm truncate">{r.name}</h3>
+                      <p className="text-[11px] text-[#999] truncate">{r.owner_name ?? '—'}</p>
                     </div>
-                    <span className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full ${status.cls}`}>{status.label}</span>
+                    <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${status.cls}`}>{status.label}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 mt-2.5 text-xs text-[#777]">
-                    <Clock size={13} className={expired ? 'text-red-400' : 'text-[#6BA534]'} />
-                    {isTrial ? (
-                      <span>
-                        Teste grátis até <strong className="text-[#444]">{formatDate(refDate)}</strong>
-                        {remaining !== null && (
-                          <span className={expired ? 'text-red-500 font-bold' : 'text-[#6BA534] font-bold'}>
-                            {' '}· {expired ? 'expirado' : `${remaining} dia${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}`}
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <span>
-                        Acesso pago até <strong className="text-[#444]">{formatDate(refDate)}</strong>
-                        {remaining !== null && (
-                          <span className={expired ? 'text-red-500 font-bold' : 'text-[#6BA534] font-bold'}>
-                            {' '}· {expired ? 'vencido' : `${remaining} dia${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}`}
-                          </span>
-                        )}
-                      </span>
+                  <div className="flex items-center gap-1 mt-1.5 text-[11px] text-[#888]">
+                    <Clock size={11} className={expired ? 'text-red-400' : 'text-[#6BA534]'} />
+                    <span>{isTrial ? 'Teste até' : 'Pago até'} {formatDate(refDate)}</span>
+                    {dayLabel && (
+                      <span className={`font-bold ${expired ? 'text-red-500' : 'text-[#6BA534]'}`}>· {dayLabel}</span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 mt-3">
+                  <div className="flex items-center gap-1.5 mt-2.5">
                     <button
                       onClick={() => handleAction('pay', r)}
                       disabled={busyId === r.id}
-                      className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-[#2D5016] text-white hover:bg-[#3d6b1e] transition-colors disabled:opacity-50"
+                      title="Registrar pagamento (+30 dias)"
+                      className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-[#2D5016] text-white hover:bg-[#3d6b1e] transition-colors disabled:opacity-50"
                     >
-                      <CheckCircle2 size={14} /> Registrar pagamento (+30 dias)
+                      <CheckCircle2 size={12} /> +30 dias
                     </button>
 
                     {r.subscription_status === 'suspended' ? (
                       <button
                         onClick={() => handleAction('reactivate', r)}
                         disabled={busyId === r.id}
-                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-[#e8f5e0] text-[#2D5016] hover:bg-[#d8edc8] transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-[#e8f5e0] text-[#2D5016] hover:bg-[#d8edc8] transition-colors disabled:opacity-50"
                       >
-                        <RotateCcw size={14} /> Reativar
+                        <RotateCcw size={12} /> Reativar
                       </button>
                     ) : (
                       <button
                         onClick={() => handleAction('suspend', r)}
                         disabled={busyId === r.id}
-                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors disabled:opacity-50"
                       >
-                        <Ban size={14} /> Suspender
+                        <Ban size={12} /> Suspender
                       </button>
                     )}
                   </div>

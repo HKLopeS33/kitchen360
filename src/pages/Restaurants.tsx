@@ -1,4 +1,4 @@
-import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, ChevronRight, Package, User, LogOut, Store } from 'lucide-react';
+import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, ChevronRight, Package, User, LogOut, Store, ShieldCheck } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useRestaurants } from '../helpers/useRestaurants';
@@ -91,6 +91,14 @@ export function Restaurants() {
                         className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#444] hover:bg-[#f7f5f0] transition-colors">
                         <MapPin size={15} className="text-[#6BA534]" /> Endereço
                       </Link>
+                      {user.role === 'admin' && (
+                        <>
+                          <Link to="/admin" onClick={() => setMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-[#2D5016] hover:bg-[#e8f5e0] transition-colors">
+                            <ShieldCheck size={15} className="text-[#6BA534]" /> Painel administrativo
+                          </Link>
+                        </>
+                      )}
                       <div className="border-t border-gray-100 my-1" />
                       <button
                         onClick={() => { setMenuOpen(false); logout(); }}
