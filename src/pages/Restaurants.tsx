@@ -7,6 +7,8 @@ import { useCart } from '../helpers/useCart';
 import { CATEGORIES, getCategory, type Category } from '../lib/categories';
 import logo from '../assets/logo-icon.png';
 import { Footer } from '../components/Footer';
+import { PromotionsCarousel } from '../components/PromotionsCarousel';
+import { NotificationBell } from '../components/NotificationBell';
 
 function formatTime(time: string) {
   return time?.slice(0, 5) ?? '--:--';
@@ -52,7 +54,10 @@ export function Restaurants() {
             <img src={logo} alt="" className="h-9 w-auto object-contain" />
             <span className="font-black text-lg text-[#2D5016] tracking-tight">Floresta Já</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Sino de notificações (apenas logados) */}
+            {user && <NotificationBell userId={user.id} />}
+
             {/* Carrinho com badge */}
             {user?.role !== 'restaurant_owner' && totalItems > 0 && (
               <Link to="/cart" className="relative flex items-center gap-1.5 bg-[#2D5016] text-white text-sm font-semibold px-3 py-2 rounded-xl hover:bg-[#3d6b1e] transition-colors">
@@ -155,6 +160,9 @@ export function Restaurants() {
             <span className="text-[11px] text-[#999] font-medium">Pernambuco</span>
           </div>
         </div>
+
+        {/* Carrossel de promoções */}
+        <PromotionsCarousel />
 
         {/* Search */}
         <div className="relative mb-6">

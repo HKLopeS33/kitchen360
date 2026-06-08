@@ -4,19 +4,20 @@ import {
   Leaf, Clock, MapPin, Phone, Store, ToggleLeft, ToggleRight,
   LogOut, Eye, Plus, Trash2, Pencil, X, Check,
   Package, UtensilsCrossed, Settings, Wallet, ExternalLink, EyeOff, CheckCircle2, AlertCircle,
-  Share2, Copy, ShieldCheck,
+  Share2, Copy, ShieldCheck, Tag, ToggleLeft as Toggle, Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
 import { useMyRestaurant } from '../helpers/useRestaurants';
 import { useMenuItems } from '../helpers/useMenuItems';
+import { useMyPromotions, type Promotion } from '../helpers/usePromotions';
 import { Button } from '../components/Button';
 import { ImageUpload } from '../components/ImageUpload';
 import { OrdersPanel } from '../components/OrdersPanel';
 import type { MenuItem } from '../lib/supabase';
 import { CATEGORIES, type Category } from '../lib/categories';
 
-type Tab = 'pedidos' | 'cardapio' | 'dados';
+type Tab = 'pedidos' | 'cardapio' | 'promocoes' | 'dados';
 
 function InputField({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -39,6 +40,7 @@ export function RestaurantDashboard() {
   // Adia a busca do cardápio até a aba "Cardápio" ser aberta — evita atraso na exibição inicial (Pedidos)
   const [menuLoaded, setMenuLoaded] = useState(false);
   useEffect(() => { if (tab === 'cardapio') setMenuLoaded(true); }, [tab]);
+  const { promotions, create: createPromo, toggle: togglePromo, remove: removePromo } = useMyPromotions(restaurant?.id ?? null);
   const { items: menuItems, isLoading: loadingMenu, createItem, updateItem, deleteItem } = useMenuItems(menuLoaded ? (restaurant?.id ?? null) : null);
   const [toggling, setToggling] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -395,9 +397,10 @@ export function RestaurantDashboard() {
             {/* Tabs de navegação */}
             <div className="flex bg-white rounded-2xl shadow-sm p-1.5 gap-1 mb-5">
               {([
-                { key: 'pedidos',  label: 'Pedidos',   icon: <Package size={16} /> },
-                { key: 'cardapio', label: 'Cardápio',  icon: <UtensilsCrossed size={16} /> },
-                { key: 'dados',    label: 'Dados',     icon: <Settings size={16} /> },
+                { key: 'pedidos',   label: 'Pedidos',    icon: <Package size={15} /> },
+                { key: 'cardapio',  label: 'Cardápio',   icon: <UtensilsCrossed size={15} /> },
+                { key: 'promocoes', label: 'Promoções',  icon: <Tag size={15} /> },
+                { key: 'dados',     label: 'Dados',      icon: <Settings size={15} /> },
               ] as { key: Tab; label: string; icon: React.ReactNode }[]).map(t => (
                 <button
                   key={t.key}
@@ -494,6 +497,17 @@ export function RestaurantDashboard() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ── ABA PROMOÇÕES ── */}
+            {tab === 'promocoes' && (
+              <PromotionsTab
+                restaurantId={restaurant.id}
+                promotions={promotions}
+                onCreate={createPromo}
+                onToggle={togglePromo}
+                onRemove={removePromo}
+              />
             )}
 
             {/* ── ABA DADOS ── */}
@@ -610,6 +624,192 @@ export function RestaurantDashboard() {
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-componente: aba de Promoções
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EMPTY_PROMO = {
+  title: '', description: '', type: 'promo' as Promotion['type'],
+  badge: '', original_price: '', promo_price: '', ends_at: '',
+};
+
+function PromotionsTab({ restaurantId, promotions, onCreate, onToggle, onRemove }: {
+  restaurantId: string;
+  promotions: Promotion[];
+  onCreate: (v: any) => Promise<any>;
+  onToggle: (id: string, active: boolean) => Promise<any>;
+  onRemove: (id: string) => Promise<void>;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_PROMO);
+  const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim()) { toast.error('Informe o título da promoção'); return; }
+    setSaving(true);
+    try {
+      await onCreate({
+        restaurant_id: restaurantId,
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        type: form.type,
+        badge: form.badge.trim() || null,
+        original_price: form.original_price ? Number(form.original_price) : null,
+        promo_price: form.promo_price ? Number(form.promo_price) : null,
+        image_url: null,
+        starts_at: new Date().toISOString(),
+        ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+        is_active: true,
+      });
+      toast.success('Promoção criada!');
+      setShowForm(false);
+      setForm(EMPTY_PROMO);
+    } catch (err: any) { toast.error(err.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!confirm('Remover esta promoção?')) return;
+    setBusyId(id);
+    try { await onRemove(id); toast.success('Promoção removida.'); }
+    catch (err: any) { toast.error(err.message); }
+    finally { setBusyId(null); }
+  };
+
+  const TYPE_LABEL: Record<string, string> = { promo: 'Promoção', combo: 'Combo', desconto: 'Desconto' };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-bold text-[#1a1a1a] flex items-center gap-2">
+          <Tag size={18} className="text-[#6BA534]" /> Promoções
+          <span className="text-xs font-normal text-[#aaa]">({promotions.length})</span>
+        </h2>
+        <button
+          onClick={() => setShowForm(s => !s)}
+          className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#2D5016] hover:bg-[#3d6b1e] px-3 py-2 rounded-xl transition-colors"
+        >
+          <Plus size={15} /> Nova promoção
+        </button>
+      </div>
+
+      {/* Formulário de criação */}
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4 border border-[#e8f5e0]">
+          <h3 className="font-bold text-sm text-[#2D5016]">Nova promoção / combo</h3>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="text-xs font-semibold text-[#555] mb-1 block">Título *</label>
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="Ex: Combo do dia, 20% OFF no almoço..."
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#555] mb-1 block">Tipo</label>
+              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as any }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all">
+                <option value="promo">Promoção</option>
+                <option value="combo">Combo</option>
+                <option value="desconto">Desconto</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#555] mb-1 block">Destaque (badge)</label>
+              <input value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))}
+                placeholder="Ex: 20% OFF, COMBO"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#555] mb-1 block">Preço original (R$)</label>
+              <input type="number" step="0.01" value={form.original_price} onChange={e => setForm(f => ({ ...f, original_price: e.target.value }))}
+                placeholder="Ex: 25.00"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#555] mb-1 block">Preço promocional (R$)</label>
+              <input type="number" step="0.01" value={form.promo_price} onChange={e => setForm(f => ({ ...f, promo_price: e.target.value }))}
+                placeholder="Ex: 19.90"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-[#555] mb-1 block flex items-center gap-1"><Calendar size={11} /> Válida até</label>
+              <input type="date" value={form.ends_at} onChange={e => setForm(f => ({ ...f, ends_at: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all" />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs font-semibold text-[#555] mb-1 block">Descrição</label>
+              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Descreva os itens incluídos, restrições..."
+                rows={2}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] resize-none transition-all" />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="submit" loading={saving} size="sm">Publicar promoção</Button>
+            <button type="button" onClick={() => setShowForm(false)}
+              className="px-4 py-2 text-sm text-[#777] hover:text-[#333] transition-colors">Cancelar</button>
+          </div>
+        </form>
+      )}
+
+      {/* Lista de promoções */}
+      {promotions.length === 0 && !showForm ? (
+        <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
+          <Tag size={32} className="mx-auto text-[#ddd] mb-3" />
+          <p className="text-sm text-[#bbb]">Nenhuma promoção criada ainda.</p>
+          <p className="text-xs text-[#ccc] mt-1">Crie combos e descontos para atrair mais clientes!</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {promotions.map(p => (
+            <div key={p.id} className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-[#1a1a1a] truncate">{p.title}</span>
+                  {p.badge && <span className="text-[10px] font-black bg-orange-50 text-orange-500 px-1.5 py-0.5 rounded-full shrink-0">{p.badge}</span>}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[11px] text-[#aaa]">{TYPE_LABEL[p.type]}</span>
+                  {p.promo_price && (
+                    <>
+                      {p.original_price && <span className="text-[11px] text-[#ccc] line-through">R$ {Number(p.original_price).toFixed(2).replace('.', ',')}</span>}
+                      <span className="text-[11px] font-bold text-[#2D5016]">R$ {Number(p.promo_price).toFixed(2).replace('.', ',')}</span>
+                    </>
+                  )}
+                  {p.ends_at && (
+                    <span className="text-[11px] text-[#bbb] flex items-center gap-0.5">
+                      <Calendar size={10} /> até {new Date(p.ends_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Toggle ativo/inativo */}
+                <button
+                  onClick={async () => { setBusyId(p.id); try { await onToggle(p.id, !p.is_active); } finally { setBusyId(null); } }}
+                  disabled={busyId === p.id}
+                  title={p.is_active ? 'Desativar' : 'Ativar'}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 ${p.is_active ? 'bg-[#e8f5e0] text-[#2D5016]' : 'bg-gray-100 text-[#aaa]'}`}>
+                  {p.is_active ? <Check size={14} /> : <Toggle size={14} />}
+                </button>
+                <button
+                  onClick={() => handleRemove(p.id)} disabled={busyId === p.id}
+                  className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-40">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
