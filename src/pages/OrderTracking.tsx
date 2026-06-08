@@ -51,7 +51,7 @@ export function OrderTracking() {
   return (
     <div className="min-h-screen bg-[#f7f5f0]">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto safe-px py-4 flex items-center gap-3">
+        <div className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-4 flex items-center gap-3">
           <Link to="/restaurantes" className="text-[#555] hover:text-[#1a1a1a]">
             <ArrowLeft size={22} />
           </Link>
@@ -61,7 +61,7 @@ export function OrderTracking() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto safe-px py-6 space-y-5">
+      <main className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-6 space-y-5">
 
         {/* Cabeçalho do pedido */}
         <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between animate-fade-in-up">

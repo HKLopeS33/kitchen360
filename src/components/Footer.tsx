@@ -12,7 +12,7 @@ const LINKS: { to: string; label: string }[] = [
 export function Footer() {
   return (
     <footer className="border-t border-[#e3ede0] bg-white/60 mt-10">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-2xl lg:max-w-3xl mx-auto px-4 py-8">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-7 h-7 rounded-lg bg-[#e8f5e0] flex items-center justify-center">
             <Leaf size={14} className="text-[#2D5016]" />

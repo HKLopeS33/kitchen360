@@ -47,7 +47,7 @@ export function Restaurants() {
     <div className="min-h-screen bg-[#f7f5f0]">
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md border-b border-[#e3ede0] sticky top-0 z-10 shadow-[0_1px_12px_rgba(45,80,22,0.06)]">
-        <div className="max-w-2xl mx-auto safe-px py-4 flex items-center justify-between">
+        <div className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="" className="h-9 w-auto object-contain" />
             <span className="font-black text-lg text-[#2D5016] tracking-tight">Floresta Já</span>
@@ -111,10 +111,10 @@ export function Restaurants() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto safe-px py-8">
+      <main className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-8">
         {/* Title */}
         <div className="mb-5 animate-fade-in-up">
-          <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-[#2D5016] via-[#4a8526] to-[#6BA534] bg-clip-text text-transparent drop-shadow-sm">{title}</h1>
+          <h1 className="text-[28px] sm:text-4xl font-black tracking-tight bg-gradient-to-r from-[#2D5016] via-[#4a8526] to-[#6BA534] bg-clip-text text-transparent drop-shadow-sm">{title}</h1>
           <div className="flex items-center gap-1.5 mt-1.5">
             <span className="flex items-center gap-1 bg-[#e8f5e0] text-[#2D5016] text-xs font-bold px-2.5 py-1 rounded-full">
               <MapPin size={12} />
@@ -172,7 +172,7 @@ export function Restaurants() {
         <div className="relative mb-5">
         <div className="flex gap-4 overflow-x-auto pb-1.5 -mx-5 px-5 scrollbar-none">
           <button onClick={() => setCategory('todos')} className="shrink-0 flex flex-col items-center gap-1.5 group">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 ${
+            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-200 ${
               category === 'todos'
                 ? 'bg-[#2D5016] shadow-[0_6px_16px_rgba(45,80,22,0.35)] scale-105'
                 : 'bg-white border border-[#e3ede0] shadow-sm group-hover:border-[#bcd9a4]'
@@ -186,7 +186,7 @@ export function Restaurants() {
             const active = category === c.id;
             return (
               <button key={c.id} onClick={() => setCategory(c.id)} className="shrink-0 flex flex-col items-center gap-1.5 group">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 ${
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-200 ${
                   active
                     ? 'bg-[#2D5016] shadow-[0_6px_16px_rgba(45,80,22,0.35)] scale-105'
                     : 'bg-white border border-[#e3ede0] shadow-sm group-hover:border-[#bcd9a4]'
