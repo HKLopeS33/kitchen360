@@ -55,9 +55,9 @@ Deno.serve(async (req) => {
         email: (payerEmail && payerEmail.includes('@')) ? payerEmail : 'pagador@florestaja.com',
       },
       back_urls: {
-        success: `${APP_URL}/meu-restaurante?sub=sucesso`,
-        failure: `${APP_URL}/meu-restaurante?sub=falha`,
-        pending: `${APP_URL}/meu-restaurante?sub=pendente`,
+        success: `${APP_URL}/assinatura-status?result=sucesso&rid=${restaurantId}`,
+        failure: `${APP_URL}/assinatura-status?result=falha&rid=${restaurantId}`,
+        pending: `${APP_URL}/assinatura-status?result=pendente&rid=${restaurantId}`,
       },
       // Prefixo "sub_" diferencia pagamentos de assinatura dos pedidos no webhook
       external_reference: `sub_${restaurantId}`,

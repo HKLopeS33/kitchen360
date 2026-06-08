@@ -18,6 +18,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { SubscriptionPage } from './pages/SubscriptionPage';
+import { SubscriptionStatus } from './pages/SubscriptionStatus';
 import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/restaurantes/:id" element={<RestaurantMenu />} />
             <Route path="/meu-restaurante" element={<RestaurantDashboard />} />
             <Route path="/assinatura" element={<SubscriptionPage />} />
+            <Route path="/assinatura-status" element={<SubscriptionStatus />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/pedido-status" element={<PaymentStatus />} />
             <Route path="/pedido/:id" element={<OrderTracking />} />

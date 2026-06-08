@@ -94,16 +94,23 @@ Deno.serve(async (req) => {
     // ── Pagamento de ASSINATURA (external_reference começa com "sub_") ──
     if (externalRef.startsWith('sub_')) {
       const restaurantId = externalRef.replace('sub_', '');
-      console.log('Subscription payment for restaurant:', restaurantId, '| status:', mpStatus);
+      const paymentId    = String(id);
+      console.log('Subscription payment for restaurant:', restaurantId, '| status:', mpStatus, '| payment_id:', paymentId);
 
       if (mpStatus === 'approved') {
-        // Estende subscription_active_until em 30 dias a partir de hoje (ou da data atual se ainda válida)
+        // Idempotência: verifica se esse payment_id já foi processado
         const { data: rest } = await supabase
           .from('restaurants')
-          .select('subscription_active_until')
+          .select('subscription_active_until, last_subscription_payment_id')
           .eq('id', restaurantId)
           .maybeSingle();
 
+        if (rest?.last_subscription_payment_id === paymentId) {
+          console.log('Pagamento já processado, ignorando duplicata:', paymentId);
+          return new Response('ok', { status: 200 });
+        }
+
+        // Estende 30 dias a partir da data vigente (se ainda no futuro) ou de hoje
         const base = rest?.subscription_active_until && new Date(rest.subscription_active_until) > new Date()
           ? new Date(rest.subscription_active_until)
           : new Date();
@@ -114,11 +121,12 @@ Deno.serve(async (req) => {
           .update({
             subscription_status: 'active',
             subscription_active_until: base.toISOString(),
+            last_subscription_payment_id: paymentId,
           })
           .eq('id', restaurantId);
 
         if (subErr) console.error('Erro ao renovar assinatura:', subErr);
-        else console.log('Assinatura renovada até:', base.toISOString());
+        else console.log('Assinatura renovada até:', base.toISOString(), '| payment_id salvo:', paymentId);
       }
 
       return new Response('ok', { status: 200 });
