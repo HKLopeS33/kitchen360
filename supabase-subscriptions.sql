@@ -24,13 +24,24 @@ create policy "app_settings_select_all" on app_settings
   for select using (true);
 
 -- Apenas administradores podem alterar.
+-- Função auxiliar "security definer": evita recursão infinita de RLS
+-- ao checar se o usuário logado é admin (não aciona as policies de
+-- "profiles" de novo, diferente de uma subquery direta na própria policy).
+create or replace function is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from profiles p where p.id = auth.uid() and p.role = 'admin'
+  );
+$$;
+
 drop policy if exists "app_settings_admin_write" on app_settings;
 create policy "app_settings_admin_write" on app_settings
-  for all using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  ) with check (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  for all using (is_admin()) with check (is_admin());
 
 
 -- 2) Campos de assinatura/teste no restaurante.
@@ -53,22 +64,14 @@ comment on column restaurants.subscription_active_until is
 --    restaurantes (necessário para o painel de gestão de assinaturas).
 drop policy if exists "restaurants_admin_select_all" on restaurants;
 create policy "restaurants_admin_select_all" on restaurants
-  for select using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  for select using (is_admin());
 
 drop policy if exists "restaurants_admin_update_all" on restaurants;
 create policy "restaurants_admin_update_all" on restaurants
-  for update using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  ) with check (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  for update using (is_admin()) with check (is_admin());
 
 -- 4) Permite que administradores leiam todos os perfis (para ver nome/
 --    e-mail dos donos de restaurante na lista de assinaturas).
 drop policy if exists "profiles_admin_select_all" on profiles;
 create policy "profiles_admin_select_all" on profiles
-  for select using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  for select using (is_admin());
