@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, LogOut, ShieldCheck, CheckCircle2, Ban, RotateCcw, Pencil, Check, X, Clock, Store } from 'lucide-react';
+import { Leaf, LogOut, ShieldCheck, CheckCircle2, Ban, RotateCcw, Pencil, Check, X, Clock, Store, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
 import { useAdminSubscriptions, useMonthlyFee } from '../helpers/useRestaurants';
+import { supabase } from '../lib/supabase';
 import type { Restaurant } from '../lib/supabase';
 
 function formatPrice(p: number) { return `R$ ${Number(p).toFixed(2).replace('.', ',')} /mês`; }
@@ -33,6 +34,9 @@ export function AdminDashboard() {
   const [feeInput, setFeeInput] = useState('');
   const [savingFee, setSavingFee] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [adminToken, setAdminToken] = useState('');
+  const [showToken, setShowToken] = useState(false);
+  const [savingToken, setSavingToken] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -41,6 +45,22 @@ export function AdminDashboard() {
   }, [user, authLoading, navigate]);
 
   useEffect(() => { setFeeInput(String(fee)); }, [fee]);
+
+  // Carrega token do admin ao montar
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'admin_mp_token').maybeSingle()
+      .then(({ data }) => { if (data?.value) setAdminToken(data.value); });
+  }, []);
+
+  async function handleSaveToken() {
+    if (!adminToken.trim()) { toast.error('Informe o Access Token'); return; }
+    setSavingToken(true);
+    try {
+      await supabase.from('app_settings').upsert({ key: 'admin_mp_token', value: adminToken.trim(), updated_at: new Date().toISOString() });
+      toast.success('Token salvo! Pagamentos de mensalidade serão direcionados à sua conta.');
+    } catch (err: any) { toast.error(err.message); }
+    finally { setSavingToken(false); }
+  }
 
   async function handleSaveFee() {
     const value = Number(feeInput.replace(',', '.'));
@@ -137,6 +157,41 @@ export function AdminDashboard() {
               className="flex items-center gap-1.5 text-xs font-semibold text-[#6BA534] hover:text-[#2D5016] bg-[#f0f8e8] hover:bg-[#e4f4d4] px-3 py-2 rounded-xl transition-colors shrink-0">
               <Pencil size={12} /> Editar
             </button>
+          )}
+        </div>
+
+        {/* Token MP do admin para receber mensalidades */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <CreditCard size={15} className="text-[#6BA534]" />
+            <p className="text-sm font-bold text-[#1a1a1a]">Recebimento de mensalidades</p>
+          </div>
+          <p className="text-xs text-[#999] leading-relaxed">
+            Seu <strong>Access Token de Produção</strong> do Mercado Pago. Os pagamentos de mensalidade de todos os restaurantes serão direcionados à sua conta.
+          </p>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type={showToken ? 'text' : 'password'}
+                value={adminToken}
+                onChange={e => setAdminToken(e.target.value)}
+                placeholder="APP_USR-xxxxxxxxxxxxxxxx"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm font-mono outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
+              />
+              <button type="button" onClick={() => setShowToken(s => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#555]">
+                {showToken ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
+            <button onClick={handleSaveToken} disabled={savingToken}
+              className="flex items-center gap-1 text-xs font-bold px-3 py-2 rounded-xl bg-[#2D5016] text-white hover:bg-[#3d6b1e] disabled:opacity-50 transition-colors shrink-0">
+              <Check size={13} /> Salvar
+            </button>
+          </div>
+          {adminToken && (
+            <p className="text-[11px] text-[#6BA534] flex items-center gap-1">
+              <CheckCircle2 size={11} /> Token configurado — pagamentos ativos
+            </p>
           )}
         </div>
 

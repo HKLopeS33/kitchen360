@@ -86,11 +86,49 @@ Deno.serve(async (req) => {
       return new Response('payment not accessible', { status: 200 });
     }
 
-    const mpStatus    = payment.status as string;
-    const orderNumber = payment.external_reference;
+    const mpStatus       = payment.status as string;
+    const externalRef    = payment.external_reference ?? '';
+
+    console.log('payment status:', mpStatus, '| external_reference:', externalRef);
+
+    // ── Pagamento de ASSINATURA (external_reference começa com "sub_") ──
+    if (externalRef.startsWith('sub_')) {
+      const restaurantId = externalRef.replace('sub_', '');
+      console.log('Subscription payment for restaurant:', restaurantId, '| status:', mpStatus);
+
+      if (mpStatus === 'approved') {
+        // Estende subscription_active_until em 30 dias a partir de hoje (ou da data atual se ainda válida)
+        const { data: rest } = await supabase
+          .from('restaurants')
+          .select('subscription_active_until')
+          .eq('id', restaurantId)
+          .maybeSingle();
+
+        const base = rest?.subscription_active_until && new Date(rest.subscription_active_until) > new Date()
+          ? new Date(rest.subscription_active_until)
+          : new Date();
+        base.setDate(base.getDate() + 30);
+
+        const { error: subErr } = await supabase
+          .from('restaurants')
+          .update({
+            subscription_status: 'active',
+            subscription_active_until: base.toISOString(),
+          })
+          .eq('id', restaurantId);
+
+        if (subErr) console.error('Erro ao renovar assinatura:', subErr);
+        else console.log('Assinatura renovada até:', base.toISOString());
+      }
+
+      return new Response('ok', { status: 200 });
+    }
+
+    // ── Pagamento de PEDIDO (fluxo normal) ──
+    const orderNumber = externalRef;
     const newStatus   = statusMap[mpStatus] ?? 'pending';
 
-    console.log('payment status:', mpStatus, '→ order status:', newStatus, '| order_number:', orderNumber, '| token used:', usedToken ? usedToken.slice(0, 12) + '...' : 'none');
+    console.log('order status:', newStatus, '| order_number:', orderNumber, '| token used:', usedToken ? usedToken.slice(0, 12) + '...' : 'none');
 
     const { data: updatedRows, error } = await supabase
       .from('orders')

@@ -4,7 +4,7 @@ import {
   Leaf, Clock, MapPin, Phone, Store, ToggleLeft, ToggleRight,
   LogOut, Eye, Plus, Trash2, Pencil, X, Check,
   Package, UtensilsCrossed, Settings, Wallet, ExternalLink, EyeOff, CheckCircle2, AlertCircle,
-  Share2, Copy, ShieldCheck, Tag, ToggleLeft as Toggle, Calendar,
+  Share2, Copy, ShieldCheck, Tag, ToggleLeft as Toggle, Calendar, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
@@ -332,38 +332,28 @@ export function RestaurantDashboard() {
           </div>
         ) : (
           <>
-            {/* Status da assinatura */}
+            {/* Indicador de assinatura — botão compacto */}
             {(() => {
-              const isTrial = (restaurant.subscription_status ?? 'trial') === 'trial';
+              const status = restaurant.subscription_status ?? 'trial';
+              const isTrial = status === 'trial';
               const refDate = isTrial ? restaurant.trial_ends_at : restaurant.subscription_active_until;
               const remaining = refDate ? Math.ceil((new Date(refDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
               const expired = remaining !== null && remaining < 0;
-              const meta: Record<string, { label: string; cls: string }> = {
-                trial:     { label: 'Período de teste',  cls: 'bg-blue-50 text-blue-600 border-blue-100' },
-                active:    { label: 'Assinatura ativa',  cls: 'bg-[#e8f5e0] text-[#2D5016] border-[#d8edc8]' },
-                past_due:  { label: 'Mensalidade vencida', cls: 'bg-orange-50 text-orange-600 border-orange-100' },
-                suspended: { label: 'Acesso suspenso',   cls: 'bg-red-50 text-red-500 border-red-100' },
-              };
-              const m = meta[restaurant.subscription_status ?? 'trial'] ?? meta.trial;
+              const suspended = status === 'suspended';
+
+              let dot = 'bg-[#6BA534]';
+              let label = 'Assinatura ativa';
+              if (suspended || expired) { dot = 'bg-red-500'; label = suspended ? 'Conta suspensa' : 'Acesso vencido'; }
+              else if (isTrial) { dot = 'bg-blue-400'; label = `Teste — ${remaining ?? 0}d restantes`; }
+              else if (remaining !== null && remaining <= 10) { dot = 'bg-yellow-400'; label = `Vence em ${remaining}d`; }
+
               return (
-                <div className={`rounded-2xl border p-4 mb-5 flex items-start gap-3 ${m.cls} animate-fade-in-up`}>
-                  <ShieldCheck size={20} className="shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <p className="font-bold text-sm">{m.label}</p>
-                    {refDate && (
-                      <p className="text-xs mt-0.5 opacity-90">
-                        {isTrial ? 'Teste grátis até ' : 'Acesso garantido até '}
-                        <strong>{new Date(refDate).toLocaleDateString('pt-BR')}</strong>
-                        {remaining !== null && (
-                          <> · {expired ? 'expirado' : `${remaining} dia${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}`}</>
-                        )}
-                      </p>
-                    )}
-                    <Link to="/politica-assinatura" className="text-xs font-semibold underline opacity-80 hover:opacity-100">
-                      Ver política de assinatura
-                    </Link>
-                  </div>
-                </div>
+                <Link to="/assinatura"
+                  className="flex items-center gap-2 mb-4 self-start bg-white rounded-xl shadow-sm px-3 py-2 border border-gray-100 hover:border-[#6BA534] hover:bg-[#f8fdf5] transition-all animate-fade-in-up">
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot} ${(suspended || expired) ? 'animate-pulse' : ''}`} />
+                  <span className="text-xs font-semibold text-[#444]">{label}</span>
+                  <ChevronRight size={13} className="text-[#aaa] ml-0.5" />
+                </Link>
               );
             })()}
 
