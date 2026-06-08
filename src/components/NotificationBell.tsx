@@ -50,10 +50,10 @@ export function NotificationBell({ userId }: Props) {
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-[#e8f5e0] hover:bg-[#d4edbc] transition-colors"
+        className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-[#2D5016] hover:bg-[#3d6b1e] transition-colors shadow-sm"
         aria-label="Notificações"
       >
-        <Bell size={18} className="text-[#2D5016]" />
+        <Bell size={18} className="text-white" />
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center leading-none">
             {unreadCount > 9 ? '9+' : unreadCount}

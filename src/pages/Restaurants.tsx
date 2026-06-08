@@ -55,9 +55,6 @@ export function Restaurants() {
             <span className="font-black text-lg text-[#2D5016] tracking-tight">Floresta Já</span>
           </Link>
           <div className="flex items-center gap-2">
-            {/* Sino de notificações (apenas logados) */}
-            {user && <NotificationBell userId={user.id} />}
-
             {/* Carrinho com badge */}
             {user?.role !== 'restaurant_owner' && totalItems > 0 && (
               <Link to="/cart" className="relative flex items-center gap-1.5 bg-[#2D5016] text-white text-sm font-semibold px-3 py-2 rounded-xl hover:bg-[#3d6b1e] transition-colors">
@@ -77,7 +74,11 @@ export function Restaurants() {
                   </button>
                 </>
               ) : (
-                <div className="relative" ref={menuRef}>
+                <div className="flex items-center gap-2">
+                  {/* Sino de notificações */}
+                  <NotificationBell userId={user.id} />
+
+                  <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setMenuOpen(o => !o)}
                     className="flex items-center gap-1.5 text-sm font-semibold text-[#2D5016] hover:bg-[#e8f5e0] px-2.5 py-1.5 rounded-xl transition-colors"
@@ -113,6 +114,7 @@ export function Restaurants() {
                       </button>
                     </div>
                   )}
+                </div>
                 </div>
               )
             ) : (
