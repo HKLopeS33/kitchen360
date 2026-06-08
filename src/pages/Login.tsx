@@ -42,7 +42,7 @@ export function Login() {
   if (isLoading) return null;
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-[#1f3d0f] via-[#2D5016] to-[#4a8526]">
+    <div className="min-h-screen relative flex items-center justify-center px-6 py-8 overflow-hidden bg-gradient-to-br from-[#1f3d0f] via-[#2D5016] to-[#4a8526]">
       {/* Formas decorativas de fundo */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 -left-24 w-80 h-80 rounded-full bg-[#6BA534]/25 blur-3xl" />
@@ -52,15 +52,15 @@ export function Login() {
         <Leaf size={100} className="absolute top-10 right-16 text-white/5 rotate-[24deg]" />
       </div>
 
-      <div className="relative w-full max-w-sm">
+      <div className="relative w-full max-w-sm mx-auto text-center">
         {/* Identidade visual / logo */}
-        <div className="flex flex-col items-center mb-6 animate-fade-in-up">
-          <img src={logo} alt="Floresta Já" className="w-32 h-32 object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] mb-2" />
+        <div className="flex flex-col items-center mb-6 animate-fade-in-up px-2">
+          <img src={logo} alt="Floresta Já" className="w-28 h-28 sm:w-32 sm:h-32 object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)] mb-2" />
           <h1 className="text-2xl font-black text-white tracking-tight">Floresta Já</h1>
-          <p className="text-sm text-[#cfe9b8] font-medium mt-0.5">Sabores de Floresta - PE, na sua porta</p>
+          <p className="text-sm text-[#cfe9b8] font-medium mt-0.5 text-center leading-snug">Sabores de Floresta - PE, na sua porta</p>
         </div>
 
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_24px_64px_rgba(15,30,8,0.35)] p-8 animate-scale-in border border-white/40">
+        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_24px_64px_rgba(15,30,8,0.35)] p-6 sm:p-8 text-left animate-scale-in border border-white/40">
           <h2 className="text-2xl font-black text-[#1a1a1a] mb-1">Bem-vindo de volta</h2>
           <p className="text-sm text-[#6BA534] font-semibold mb-6">Entre na sua conta para continuar</p>
 
