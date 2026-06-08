@@ -61,8 +61,8 @@ export function Login() {
         </div>
 
         <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_24px_64px_rgba(15,30,8,0.35)] p-6 sm:p-8 text-left animate-scale-in border border-white/40">
-          <h2 className="text-2xl font-black text-[#1a1a1a] mb-1">Bem-vindo de volta</h2>
-          <p className="text-sm text-[#6BA534] font-semibold mb-6">Entre na sua conta para continuar</p>
+          <h2 className="text-2xl font-black text-[#1a1a1a] mb-1 text-center">Bem-vindo de volta</h2>
+          <p className="text-sm text-[#6BA534] font-semibold mb-6 text-center">Entre na sua conta para continuar</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
