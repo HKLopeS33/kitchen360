@@ -216,4 +216,55 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
       </>
     ),
   },
+
+  'politica-assinatura': {
+    title: 'Política de uso e assinatura',
+    subtitle: 'Como funciona o acesso de estabelecimentos à plataforma Floresta Já',
+    body: (
+      <>
+        <P>
+          Para manter o Floresta Já no ar — servidores, suporte, melhorias contínuas e
+          divulgação para novos clientes — cada estabelecimento parceiro contribui com
+          uma <strong>mensalidade única</strong>, com o mesmo valor para todos, definida
+          pela administração da plataforma.
+        </P>
+
+        <SectionTitle>Período de teste gratuito (15 dias)</SectionTitle>
+        <P>
+          Ao cadastrar seu estabelecimento, você ganha automaticamente <strong>15 dias
+          grátis</strong> para conhecer a plataforma: cadastre seus produtos, configure
+          horários de funcionamento, formas de pagamento e realize vendas reais de teste,
+          sem qualquer cobrança nesse período.
+        </P>
+
+        <SectionTitle>Como funciona a mensalidade</SectionTitle>
+        <ul>
+          <Li>O valor é <strong>igual para todos os estabelecimentos</strong>, sem planos diferenciados.</Li>
+          <Li>Após o período de teste, a continuidade do acesso à plataforma depende do pagamento da mensalidade vigente.</Li>
+          <Li>O pagamento é processado/registrado pela administração da plataforma — em caso de dúvidas sobre como pagar, entre em contato pelo WhatsApp <strong>(87) 99971-0850</strong>.</Li>
+          <Li>Estabelecimentos com mensalidade em atraso podem ter o acesso suspenso temporariamente até a regularização.</Li>
+        </ul>
+
+        <SectionTitle>O que está incluso</SectionTitle>
+        <ul>
+          <Li>Página própria do seu estabelecimento dentro do app, com cardápio, fotos, horários e formas de contato.</Li>
+          <Li>Recebimento de pedidos em tempo real, com pagamento online via Pix, crédito ou débito.</Li>
+          <Li>Link exclusivo da sua loja para compartilhar com seus clientes.</Li>
+          <Li>Painel de gestão para controlar produtos, pedidos e disponibilidade.</Li>
+        </ul>
+
+        <SectionTitle>Cancelamento</SectionTitle>
+        <P>
+          Você pode encerrar sua participação na plataforma a qualquer momento, bastando
+          entrar em contato pelos canais de suporte. Não há fidelidade ou multa por
+          cancelamento.
+        </P>
+
+        <P>
+          Ao cadastrar seu estabelecimento, você declara estar ciente e de acordo com
+          esta política de uso e assinatura.
+        </P>
+      </>
+    ),
+  },
 };

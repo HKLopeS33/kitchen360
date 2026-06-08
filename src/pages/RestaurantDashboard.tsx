@@ -4,6 +4,7 @@ import {
   Leaf, Clock, MapPin, Phone, Store, ToggleLeft, ToggleRight,
   LogOut, Eye, Plus, Trash2, Pencil, X, Check,
   Package, UtensilsCrossed, Settings, Wallet, ExternalLink, EyeOff, CheckCircle2, AlertCircle,
+  Share2, Copy, ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
@@ -50,6 +51,7 @@ export function RestaurantDashboard() {
     free_shipping: false, promo_text: '', delivery_time_min: 30, delivery_time_max: 50,
   });
   const [showToken, setShowToken] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
     if (restaurant) {
@@ -121,9 +123,11 @@ export function RestaurantDashboard() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) { toast.error('Nome obrigatório'); return; }
+    if (!restaurant && !acceptedTerms) { toast.error('Você precisa aceitar a política de uso e assinatura para continuar.'); return; }
     setSaving(true);
     try {
-      const payload = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, mp_access_token: form.mp_access_token.trim() || null, category: form.category, free_shipping: form.free_shipping, promo_text: form.promo_text.trim() || null, delivery_time_min: Number(form.delivery_time_min) || 30, delivery_time_max: Number(form.delivery_time_max) || 50 };
+      const payload: any = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, mp_access_token: form.mp_access_token.trim() || null, category: form.category, free_shipping: form.free_shipping, promo_text: form.promo_text.trim() || null, delivery_time_min: Number(form.delivery_time_min) || 30, delivery_time_max: Number(form.delivery_time_max) || 50 };
+      if (!restaurant) payload.accepted_terms_at = new Date().toISOString();
       if (restaurant) { await updateRestaurant(payload); toast.success('Dados atualizados!'); }
       else { await createRestaurant(payload); toast.success('Restaurante cadastrado!'); setTab('pedidos'); }
     } catch (err: any) { toast.error(err.message); }
@@ -291,11 +295,103 @@ export function RestaurantDashboard() {
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
               </div>
               <ImageUpload currentUrl={form.image_url || null} onUpload={url => setForm(f => ({ ...f, image_url: url }))} onRemove={() => setForm(f => ({ ...f, image_url: '' }))} folder="restaurantes" aspectRatio="aspect-video" />
-              <Button type="submit" fullWidth loading={saving} size="lg">Cadastrar restaurante</Button>
+
+              {/* Resumo da política de assinatura + aceite */}
+              <div className="bg-[#f7fbf3] border border-[#e3ede0] rounded-2xl p-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={17} className="text-[#6BA534]" />
+                  <h3 className="font-bold text-sm text-[#1a1a1a]">Como funciona o uso da plataforma</h3>
+                </div>
+                <p className="text-xs text-[#666] leading-relaxed">
+                  Você terá <strong className="text-[#2D5016]">15 dias grátis</strong> para cadastrar seus produtos e
+                  testar vendas reais. Depois desse período, o uso da plataforma passa a ter uma
+                  <strong className="text-[#2D5016]"> mensalidade única</strong>, com o mesmo valor para todos os
+                  estabelecimentos parceiros — definida pela administração do Floresta Já.
+                </p>
+                <Link to="/politica-assinatura" target="_blank" className="inline-block text-xs font-semibold text-[#6BA534] hover:text-[#2D5016] hover:underline">
+                  Ler a política de uso e assinatura completa →
+                </Link>
+                <label className="flex items-start gap-2.5 pt-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={e => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded accent-[#2D5016] cursor-pointer"
+                  />
+                  <span className="text-xs text-[#555] leading-relaxed">
+                    Li e estou de acordo com a <strong>política de uso e assinatura</strong>, incluindo o período de
+                    teste de 15 dias e a cobrança de mensalidade após esse prazo.
+                  </span>
+                </label>
+              </div>
+
+              <Button type="submit" fullWidth loading={saving} size="lg" disabled={!acceptedTerms}>Cadastrar restaurante</Button>
             </form>
           </div>
         ) : (
           <>
+            {/* Status da assinatura */}
+            {(() => {
+              const isTrial = restaurant.subscription_status === 'trial';
+              const refDate = isTrial ? restaurant.trial_ends_at : restaurant.subscription_active_until;
+              const remaining = refDate ? Math.ceil((new Date(refDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+              const expired = remaining !== null && remaining < 0;
+              const meta: Record<string, { label: string; cls: string }> = {
+                trial:     { label: 'Período de teste',  cls: 'bg-blue-50 text-blue-600 border-blue-100' },
+                active:    { label: 'Assinatura ativa',  cls: 'bg-[#e8f5e0] text-[#2D5016] border-[#d8edc8]' },
+                past_due:  { label: 'Mensalidade vencida', cls: 'bg-orange-50 text-orange-600 border-orange-100' },
+                suspended: { label: 'Acesso suspenso',   cls: 'bg-red-50 text-red-500 border-red-100' },
+              };
+              const m = meta[restaurant.subscription_status];
+              return (
+                <div className={`rounded-2xl border p-4 mb-5 flex items-start gap-3 ${m.cls} animate-fade-in-up`}>
+                  <ShieldCheck size={20} className="shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm">{m.label}</p>
+                    {refDate && (
+                      <p className="text-xs mt-0.5 opacity-90">
+                        {isTrial ? 'Teste grátis até ' : 'Acesso garantido até '}
+                        <strong>{new Date(refDate).toLocaleDateString('pt-BR')}</strong>
+                        {remaining !== null && (
+                          <> · {expired ? 'expirado' : `${remaining} dia${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}`}</>
+                        )}
+                      </p>
+                    )}
+                    <Link to="/politica-assinatura" className="text-xs font-semibold underline opacity-80 hover:opacity-100">
+                      Ver política de assinatura
+                    </Link>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Compartilhar link da loja */}
+            <div className="bg-white rounded-2xl shadow-sm p-4 mb-5 flex items-center gap-3 animate-fade-in-up">
+              <div className="w-10 h-10 rounded-xl bg-[#e8f5e0] flex items-center justify-center shrink-0">
+                <Share2 size={18} className="text-[#6BA534]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-sm text-[#1a1a1a]">Compartilhe sua loja</p>
+                <p className="text-xs text-[#999] truncate">Envie o link direto da sua página para seus clientes</p>
+              </div>
+              <button
+                onClick={async () => {
+                  const url = `${window.location.origin}/restaurantes/${restaurant.id}`;
+                  try {
+                    if (navigator.share) {
+                      await navigator.share({ title: restaurant.name, text: `Confira ${restaurant.name} no Floresta Já!`, url });
+                    } else {
+                      await navigator.clipboard.writeText(url);
+                      toast.success('Link copiado!');
+                    }
+                  } catch { /* usuário cancelou o compartilhamento */ }
+                }}
+                className="shrink-0 flex items-center gap-1.5 text-xs font-bold px-3.5 py-2.5 rounded-xl bg-[#2D5016] text-white hover:bg-[#3d6b1e] transition-colors"
+              >
+                <Copy size={14} /> Copiar link
+              </button>
+            </div>
+
             {/* Tabs de navegação */}
             <div className="flex bg-white rounded-2xl shadow-sm p-1.5 gap-1 mb-5">
               {([

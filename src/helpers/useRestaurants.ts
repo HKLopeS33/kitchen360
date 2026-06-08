@@ -73,3 +73,97 @@ export function useMyRestaurant(ownerId: string | null) {
 
   return { restaurant, isLoading, createRestaurant, updateRestaurant, toggleOpenToday, refetch: fetch };
 }
+
+// ---------------------------------------------------------------------
+// Hooks de administração (perfil "admin"/superusuário): listar todos os
+// restaurantes como assinantes, gerenciar status da assinatura e o valor
+// global da mensalidade cobrada de todos.
+// ---------------------------------------------------------------------
+
+export function useAdminSubscriptions() {
+  const [restaurants, setRestaurants] = useState<(Restaurant & { owner_email?: string; owner_name?: string })[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchAll = useCallback(async () => {
+    setIsLoading(true);
+    const { data: rests } = await supabase
+      .from('restaurants')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const ownerIds = Array.from(new Set((rests ?? []).map(r => r.owner_id)));
+    let profilesMap: Record<string, { name: string; email: string }> = {};
+    if (ownerIds.length) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .in('id', ownerIds);
+      profilesMap = Object.fromEntries((profiles ?? []).map(p => [p.id, { name: p.name, email: p.email }]));
+    }
+
+    setRestaurants((rests ?? []).map(r => ({
+      ...r,
+      owner_name: profilesMap[r.owner_id]?.name,
+      owner_email: profilesMap[r.owner_id]?.email,
+    })));
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const updateSubscription = async (
+    restaurantId: string,
+    values: Partial<Pick<Restaurant, 'subscription_status' | 'subscription_active_until' | 'trial_ends_at'>>
+  ) => {
+    const { data, error } = await supabase
+      .from('restaurants')
+      .update(values)
+      .eq('id', restaurantId)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    setRestaurants(rs => rs.map(r => r.id === restaurantId ? { ...r, ...data } : r));
+    return data;
+  };
+
+  /** Marca como pago: define active + estende o acesso por 30 dias a partir de hoje (ou da data de expiração atual, se ainda no futuro). */
+  const registerPayment = async (restaurant: Restaurant) => {
+    const base = restaurant.subscription_active_until && new Date(restaurant.subscription_active_until) > new Date()
+      ? new Date(restaurant.subscription_active_until)
+      : new Date();
+    base.setDate(base.getDate() + 30);
+    return updateSubscription(restaurant.id, {
+      subscription_status: 'active',
+      subscription_active_until: base.toISOString(),
+    });
+  };
+
+  const suspend = (restaurantId: string) => updateSubscription(restaurantId, { subscription_status: 'suspended' });
+  const reactivate = (restaurantId: string) => updateSubscription(restaurantId, { subscription_status: 'active' });
+
+  return { restaurants, isLoading, refetch: fetchAll, registerPayment, suspend, reactivate, updateSubscription };
+}
+
+export function useMonthlyFee() {
+  const [fee, setFee] = useState<number>(49.9);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchFee = useCallback(async () => {
+    setIsLoading(true);
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'monthly_fee').maybeSingle();
+    if (data?.value) setFee(Number(data.value));
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => { fetchFee(); }, [fetchFee]);
+
+  const updateFee = async (value: number) => {
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ key: 'monthly_fee', value: String(value), updated_at: new Date().toISOString() });
+    if (error) throw new Error(error.message);
+    setFee(value);
+  };
+
+  return { fee, isLoading, updateFee, refetch: fetchFee };
+}

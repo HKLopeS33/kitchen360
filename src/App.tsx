@@ -14,6 +14,7 @@ import { ClientOrders } from './pages/ClientOrders';
 import { ClientAccount } from './pages/ClientAccount';
 import { PaymentWaiting } from './pages/PaymentWaiting';
 import { Info } from './pages/Info';
+import { AdminDashboard } from './pages/AdminDashboard';
 import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/restaurantes" element={<Restaurants />} />
             <Route path="/restaurantes/:id" element={<RestaurantMenu />} />
             <Route path="/meu-restaurante" element={<RestaurantDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/pedido-status" element={<PaymentStatus />} />
             <Route path="/pedido/:id" element={<OrderTracking />} />
             <Route path="/pagamento-pendente/:id" element={<PaymentWaiting />} />
@@ -41,6 +43,7 @@ export default function App() {
             <Route path="/parcerias" element={<Info />} />
             <Route path="/trabalhe-conosco" element={<Info />} />
             <Route path="/privacidade" element={<Info />} />
+            <Route path="/politica-assinatura" element={<Info />} />
             {/* Rota coringa */}
             <Route path="*" element={<Navigate to="/restaurantes" replace />} />
           </Routes>

@@ -17,7 +17,12 @@ export function Login() {
   // Se já está logado, redireciona para o lugar certo
   useEffect(() => {
     if (!isLoading && user) {
-      navigate(user.role === 'restaurant_owner' ? '/meu-restaurante' : '/restaurantes', { replace: true });
+      navigate(
+        user.role === 'admin' ? '/admin'
+          : user.role === 'restaurant_owner' ? '/meu-restaurante'
+          : '/restaurantes',
+        { replace: true }
+      );
     }
   }, [user, isLoading, navigate]);
 
