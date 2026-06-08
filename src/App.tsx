@@ -14,12 +14,14 @@ import { ClientOrders } from './pages/ClientOrders';
 import { ClientAccount } from './pages/ClientAccount';
 import { PaymentWaiting } from './pages/PaymentWaiting';
 import { Info } from './pages/Info';
+import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <BrowserRouter>
+          <SplashScreen />
           <Toaster position="top-right" richColors />
           <Routes>
             <Route path="/" element={<Navigate to="/restaurantes" replace />} />
