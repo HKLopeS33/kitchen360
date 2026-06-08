@@ -1,4 +1,4 @@
-import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, Package, User, LogOut, Store } from 'lucide-react';
+import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, ChevronRight, Package, User, LogOut, Store } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useRestaurants } from '../helpers/useRestaurants';
@@ -169,7 +169,8 @@ export function Restaurants() {
         </div>
 
         {/* Atalhos circulares de categoria */}
-        <div className="flex gap-4 overflow-x-auto pb-1.5 mb-5 -mx-5 px-5 scrollbar-none">
+        <div className="relative mb-5">
+        <div className="flex gap-4 overflow-x-auto pb-1.5 -mx-5 px-5 scrollbar-none">
           <button onClick={() => setCategory('todos')} className="shrink-0 flex flex-col items-center gap-1.5 group">
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 ${
               category === 'todos'
@@ -196,6 +197,13 @@ export function Restaurants() {
               </button>
             );
           })}
+        </div>
+        {/* Indicador de scroll horizontal */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-1.5 w-12 bg-gradient-to-l from-[#f7f5f0] to-transparent flex items-center justify-end">
+          <div className="w-6 h-6 rounded-full bg-white shadow-[0_2px_8px_rgba(45,80,22,0.18)] flex items-center justify-center animate-pulse">
+            <ChevronRight size={14} className="text-[#6BA534]" />
+          </div>
+        </div>
         </div>
 
         {/* Chips de filtro rápido */}
