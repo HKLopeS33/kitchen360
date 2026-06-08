@@ -6,7 +6,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role: UserRole, address?: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (data: { name?: string; address?: string }) => Promise<void>;
+  updateProfile: (data: { name?: string; address?: string; phone?: string }) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -85,7 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const updateProfile = async (data: { name?: string; address?: string }) => {
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message);
+  };
+
+  const updateProfile = async (data: { name?: string; address?: string; phone?: string }) => {
     if (!user) throw new Error('Não autenticado');
     const { data: updated, error } = await supabase
       .from('profiles')
@@ -98,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateProfile, isLoading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateProfile, updatePassword, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

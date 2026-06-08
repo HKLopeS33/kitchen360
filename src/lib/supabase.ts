@@ -17,6 +17,7 @@ export interface Profile {
   name: string;
   role: UserRole;
   address: string;
+  phone?: string;
   created_at: string;
 }
 

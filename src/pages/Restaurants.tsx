@@ -89,7 +89,7 @@ export function Restaurants() {
                       </Link>
                       <Link to="/meus-dados" onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#444] hover:bg-[#f7f5f0] transition-colors">
-                        <MapPin size={15} className="text-[#6BA534]" /> Endereço
+                        <User size={15} className="text-[#6BA534]" /> Meu perfil
                       </Link>
                       {user.role === 'admin' && (
                         <>
