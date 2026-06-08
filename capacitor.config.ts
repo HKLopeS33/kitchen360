@@ -7,6 +7,15 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://kitchen360app.netlify.app',
     cleartext: false
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 2500,
+      launchAutoHide: true,
+      backgroundColor: '#1f3a0f',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false
+    }
   }
 };
 
