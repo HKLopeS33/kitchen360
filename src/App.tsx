@@ -15,6 +15,8 @@ import { ClientAccount } from './pages/ClientAccount';
 import { PaymentWaiting } from './pages/PaymentWaiting';
 import { Info } from './pages/Info';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
@@ -28,6 +30,8 @@ export default function App() {
             <Route path="/" element={<Navigate to="/restaurantes" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/esqueci-senha" element={<ForgotPassword />} />
+            <Route path="/redefinir-senha" element={<ResetPassword />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/restaurantes" element={<Restaurants />} />
             <Route path="/restaurantes/:id" element={<RestaurantMenu />} />

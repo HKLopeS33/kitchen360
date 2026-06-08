@@ -88,6 +88,12 @@ export function Login() {
               </div>
             </div>
 
+            <div className="text-right -mt-1">
+              <Link to="/esqueci-senha" className="text-xs text-[#6BA534] font-semibold hover:text-[#2D5016] hover:underline transition-colors">
+                Esqueceu a senha?
+              </Link>
+            </div>
+
             <Button type="submit" fullWidth loading={loading} size="lg">Entrar</Button>
           </form>
 
