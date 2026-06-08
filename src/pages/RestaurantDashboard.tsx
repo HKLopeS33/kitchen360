@@ -332,7 +332,7 @@ export function RestaurantDashboard() {
           <>
             {/* Status da assinatura */}
             {(() => {
-              const isTrial = restaurant.subscription_status === 'trial';
+              const isTrial = (restaurant.subscription_status ?? 'trial') === 'trial';
               const refDate = isTrial ? restaurant.trial_ends_at : restaurant.subscription_active_until;
               const remaining = refDate ? Math.ceil((new Date(refDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
               const expired = remaining !== null && remaining < 0;
@@ -342,7 +342,7 @@ export function RestaurantDashboard() {
                 past_due:  { label: 'Mensalidade vencida', cls: 'bg-orange-50 text-orange-600 border-orange-100' },
                 suspended: { label: 'Acesso suspenso',   cls: 'bg-red-50 text-red-500 border-red-100' },
               };
-              const m = meta[restaurant.subscription_status];
+              const m = meta[restaurant.subscription_status ?? 'trial'] ?? meta.trial;
               return (
                 <div className={`rounded-2xl border p-4 mb-5 flex items-start gap-3 ${m.cls} animate-fade-in-up`}>
                   <ShieldCheck size={20} className="shrink-0 mt-0.5" />

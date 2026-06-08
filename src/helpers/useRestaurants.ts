@@ -150,8 +150,10 @@ export function useMonthlyFee() {
 
   const fetchFee = useCallback(async () => {
     setIsLoading(true);
-    const { data } = await supabase.from('app_settings').select('value').eq('key', 'monthly_fee').maybeSingle();
-    if (data?.value) setFee(Number(data.value));
+    try {
+      const { data, error } = await supabase.from('app_settings').select('value').eq('key', 'monthly_fee').maybeSingle();
+      if (!error && data?.value) setFee(Number(data.value));
+    } catch { /* tabela ainda não criada — mantém valor padrão */ }
     setIsLoading(false);
   }, []);
 

@@ -155,8 +155,8 @@ export function AdminDashboard() {
             <p className="text-sm text-[#999] text-center py-10">Nenhum estabelecimento cadastrado ainda.</p>
           ) : (
             restaurants.map((r, idx) => {
-              const status = STATUS_META[r.subscription_status];
-              const isTrial = r.subscription_status === 'trial';
+              const status = STATUS_META[r.subscription_status] ?? STATUS_META.trial;
+              const isTrial = (r.subscription_status ?? 'trial') === 'trial';
               const refDate = isTrial ? r.trial_ends_at : r.subscription_active_until;
               const remaining = daysLeft(refDate);
               const expired = remaining !== null && remaining < 0;
