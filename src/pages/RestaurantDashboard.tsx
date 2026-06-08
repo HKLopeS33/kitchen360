@@ -149,7 +149,7 @@ export function RestaurantDashboard() {
     <div className="min-h-screen bg-[#f7f5f0]">
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto safe-px py-4 flex items-center justify-between">
           <Link to="/restaurantes" className="flex items-center gap-2 text-[#2D5016] font-bold text-lg">
             <Leaf size={22} className="text-[#6BA534]" /> Floresta Já
           </Link>
@@ -166,7 +166,7 @@ export function RestaurantDashboard() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto safe-px py-6">
 
         {/* Cabeçalho com nome + status */}
         <div className="flex items-center justify-between mb-5">

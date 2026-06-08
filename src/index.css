@@ -29,6 +29,12 @@ body {
 
 a { text-decoration: none; color: inherit; }
 
+/* Respeita áreas seguras em apps nativos (notch, barra de gestos) somadas ao espaçamento lateral */
+.safe-px {
+  padding-left: calc(env(safe-area-inset-left, 0px) + 1.25rem);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 1.25rem);
+}
+
 #root {
   min-height: 100vh;
 }

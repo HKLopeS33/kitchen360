@@ -47,7 +47,7 @@ export function Restaurants() {
     <div className="min-h-screen bg-[#f7f5f0]">
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md border-b border-[#e3ede0] sticky top-0 z-10 shadow-[0_1px_12px_rgba(45,80,22,0.06)]">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto safe-px py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="" className="h-9 w-auto object-contain" />
             <span className="font-black text-lg text-[#2D5016] tracking-tight">Floresta Já</span>
@@ -111,7 +111,7 @@ export function Restaurants() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8">
+      <main className="max-w-2xl mx-auto safe-px py-8">
         {/* Title */}
         <div className="mb-5 animate-fade-in-up">
           <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-[#2D5016] via-[#4a8526] to-[#6BA534] bg-clip-text text-transparent drop-shadow-sm">{title}</h1>
@@ -169,7 +169,7 @@ export function Restaurants() {
         </div>
 
         {/* Atalhos circulares de categoria */}
-        <div className="flex gap-4 overflow-x-auto pb-1.5 mb-5 -mx-4 px-4 scrollbar-none">
+        <div className="flex gap-4 overflow-x-auto pb-1.5 mb-5 -mx-5 px-5 scrollbar-none">
           <button onClick={() => setCategory('todos')} className="shrink-0 flex flex-col items-center gap-1.5 group">
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 ${
               category === 'todos'
@@ -199,7 +199,7 @@ export function Restaurants() {
         </div>
 
         {/* Chips de filtro rápido */}
-        <div className="flex gap-2 overflow-x-auto pb-1.5 mb-7 -mx-4 px-4 scrollbar-none">
+        <div className="flex gap-2 overflow-x-auto pb-1.5 mb-7 -mx-5 px-5 scrollbar-none">
           <button
             onClick={() => setQuickFilter(f => f === 'aberto' ? 'todos' : 'aberto')}
             className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${

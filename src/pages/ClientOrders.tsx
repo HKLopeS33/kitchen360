@@ -33,7 +33,7 @@ export function ClientOrders() {
   return (
     <div className="min-h-screen bg-[#f7f5f0]">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+        <div className="max-w-2xl mx-auto safe-px py-4 flex items-center gap-3">
           <Link to="/restaurantes" className="text-[#555] hover:text-[#1a1a1a]">
             <ArrowLeft size={22} />
           </Link>
@@ -43,7 +43,7 @@ export function ClientOrders() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto safe-px py-6">
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
