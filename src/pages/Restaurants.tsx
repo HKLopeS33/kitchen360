@@ -55,14 +55,6 @@ export function Restaurants() {
             <span className="font-black text-lg text-[#2D5016] tracking-tight">Floresta Já</span>
           </Link>
           <div className="flex items-center gap-2">
-            {/* Carrinho com badge */}
-            {user?.role !== 'restaurant_owner' && totalItems > 0 && (
-              <Link to="/cart" className="relative flex items-center gap-1.5 bg-[#2D5016] text-white text-sm font-semibold px-3 py-2 rounded-xl hover:bg-[#3d6b1e] transition-colors">
-                <ShoppingCart size={16} />
-                <span>{totalItems}</span>
-              </Link>
-            )}
-
             {user ? (
               user.role === 'restaurant_owner' ? (
                 <>
@@ -77,6 +69,18 @@ export function Restaurants() {
                 <div className="flex items-center gap-2">
                   {/* Sino de notificações */}
                   <NotificationBell userId={user.id} />
+
+                  {/* Carrinho — sempre visível para clientes */}
+                  {(user.role === 'client' || user.role === 'admin') && (
+                    <Link to="/cart" className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-[#6BA534] hover:bg-[#2D5016] transition-colors">
+                      <ShoppingCart size={17} className="text-white" />
+                      {totalItems > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center leading-none">
+                          {totalItems}
+                        </span>
+                      )}
+                    </Link>
+                  )}
 
                   <div className="relative" ref={menuRef}>
                   <button
