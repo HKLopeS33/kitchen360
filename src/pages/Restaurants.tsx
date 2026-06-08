@@ -118,7 +118,7 @@ export function Restaurants() {
           <div className="flex items-center gap-1.5 mt-1.5">
             <span className="flex items-center gap-1 bg-[#e8f5e0] text-[#2D5016] text-xs font-bold px-2.5 py-1 rounded-full">
               <MapPin size={12} />
-              Floresta - PE
+              Floresta - PE - ATT
             </span>
           </div>
         </div>
