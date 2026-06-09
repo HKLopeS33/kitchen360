@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Capacitor } from '@capacitor/core'
+import { App as CapApp } from '@capacitor/app'
 import './index.css'
 import App from './App.tsx'
 
@@ -16,6 +17,17 @@ if (Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
   if ('caches' in window) {
     caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
   }
+}
+
+// Botão voltar do Android: navega para a página anterior no histórico.
+// Se não houver histórico (já está na raiz), não fecha o app — apenas ignora.
+if (Capacitor.isNativePlatform()) {
+  CapApp.addListener('backButton', ({ canGoBack }) => {
+    if (canGoBack) {
+      window.history.back();
+    }
+    // canGoBack === false → está na tela inicial, não faz nada (não fecha o app)
+  });
 }
 
 createRoot(document.getElementById('root')!).render(
