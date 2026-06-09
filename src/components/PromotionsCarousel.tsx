@@ -43,7 +43,7 @@ export function PromotionsCarousel() {
         <span className="text-xs text-[#999]">{promotions.length} oferta{promotions.length !== 1 ? 's' : ''}</span>
       </div>
 
-      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide -mx-1 px-1">
         {promotions.map((p, idx) => {
           const grad = BG_GRADIENTS[idx % BG_GRADIENTS.length];
           const badgeBg = TYPE_COLORS[p.type] ?? 'bg-[#2D5016]';
