@@ -322,7 +322,7 @@ export function Restaurants() {
                             <CatIcon size={11} /> {cat.label}
                           </span>
                         </div>
-                        <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold mr-1 ${
                           restaurant.is_open_today
                             ? 'bg-[#e8f5e0] text-[#2D5016]'
                             : 'bg-red-50 text-red-600'
