@@ -24,6 +24,9 @@ export interface Order {
   status: OrderStatus;
   notes: string;
   created_at: string;
+  // campos extras do join (só em useOrderTracking)
+  restaurant_name?: string;
+  restaurant_phone?: string;
 }
 
 // Hook para o RESTAURANTE acompanhar seus pedidos (com realtime)
@@ -214,11 +217,13 @@ export function useOrderTracking(orderId: string | null) {
     if (!loadedOnce.current) setIsLoading(true);
     const { data } = await supabase
       .from('orders')
-      .select('*')
+      .select('*, restaurants(name, phone)')
       .eq('id', orderId)
       .maybeSingle();
-    if (data) setOrder(data as Order);
-    else setNotFound(true);
+    if (data) {
+      const { restaurants: rest, ...order } = data as any;
+      setOrder({ ...order, restaurant_name: rest?.name, restaurant_phone: rest?.phone } as Order);
+    } else setNotFound(true);
     loadedOnce.current = true;
     setIsLoading(false);
   }, [orderId]);

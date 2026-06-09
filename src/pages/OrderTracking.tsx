@@ -1,7 +1,7 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
 import {
   CheckCircle2, Clock, ChefHat, PackageCheck, Truck, XCircle,
-  ArrowLeft, MapPin, Store, Leaf,
+  ArrowLeft, MapPin, Store, Leaf, MessageCircle,
 } from 'lucide-react';
 import { useOrderTracking, type OrderStatus } from '../helpers/useOrders';
 
@@ -17,6 +17,16 @@ const STEP_INDEX: Record<OrderStatus, number> = { awaiting_payment: -1, pending:
 function formatPrice(p: number) { return `R$ ${Number(p).toFixed(2).replace('.', ',')}`; }
 function formatDate(d: string) {
   return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function buildWhatsAppUrl(order: { order_number: number; total: number; created_at: string; restaurant_phone?: string }) {
+  const phone = (order.restaurant_phone ?? '').replace(/\D/g, '');
+  if (!phone) return null;
+  const fullPhone = phone.startsWith('55') ? phone : `55${phone}`;
+  const date = formatDate(order.created_at);
+  const total = formatPrice(order.total);
+  const msg = `Olá! Gostaria de informações sobre meu pedido *#${order.order_number}*.\n\nValor pago: *${total}*\nRealizado em: ${date}`;
+  return `https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`;
 }
 
 export function OrderTracking() {
@@ -47,6 +57,7 @@ export function OrderTracking() {
 
   const cancelled = order.status === 'cancelled';
   const currentIndex = STEP_INDEX[order.status];
+  const whatsappUrl = buildWhatsAppUrl(order);
 
   return (
     <div className="min-h-screen bg-[#f7f5f0]">
@@ -157,6 +168,19 @@ export function OrderTracking() {
           <p className="text-sm text-[#666]">{order.delivery_address}</p>
           {order.notes && <p className="text-xs text-[#999] mt-1.5">Obs: {order.notes}</p>}
         </div>
+
+        {/* Botão WhatsApp do estabelecimento */}
+        {whatsappUrl && (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2.5 w-full py-3.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold rounded-2xl shadow-sm transition-colors animate-fade-in-up"
+          >
+            <MessageCircle size={18} />
+            Falar com o estabelecimento
+          </a>
+        )}
 
         <Link to="/restaurantes"
           className="flex items-center justify-center gap-2 text-sm font-semibold text-[#2D5016] hover:underline py-2">
