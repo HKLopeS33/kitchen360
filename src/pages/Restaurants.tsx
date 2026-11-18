@@ -1,5 +1,5 @@
-import { MapPin, Clock, Phone, Search, UtensilsCrossed, ShoppingCart, ChevronDown, ChevronRight, Package, User, LogOut, Store, ShieldCheck } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { MapPin, Clock, Search, UtensilsCrossed, ShoppingCart, ChevronDown, Package, User, LogOut, Store, ShieldCheck, Bike, Flame, Timer, X } from 'lucide-react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useRestaurants } from '../helpers/useRestaurants';
 import { useAuth } from '../helpers/useAuth';
@@ -10,8 +10,31 @@ import { Footer } from '../components/Footer';
 import { PromotionsCarousel } from '../components/PromotionsCarousel';
 import { NotificationBell } from '../components/NotificationBell';
 
+type QuickFilter = 'todos' | 'aberto' | 'frete' | 'promo';
+
 function formatTime(time: string) {
   return time?.slice(0, 5) ?? '--:--';
+}
+
+/** Gutter lateral único da página: 16px + área segura do aparelho. */
+const GUTTER = 'px-[calc(env(safe-area-inset-left,0px)+1rem)] sm:px-6';
+const CONTAINER = `max-w-2xl lg:max-w-3xl mx-auto ${GUTTER}`;
+
+function Chip({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: ReactNode; children: ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold whitespace-nowrap border ${
+        active
+          ? 'bg-[#2D5016] border-[#2D5016] text-white'
+          : 'bg-white border-[#e3e8dd] text-[#3f4a38] hover:border-[#bcd9a4]'
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
 }
 
 export function Restaurants() {
@@ -20,7 +43,7 @@ export function Restaurants() {
   const { totalItems } = useCart();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<Category | 'todos'>('todos');
-  const [quickFilter, setQuickFilter] = useState<'todos' | 'aberto' | 'frete' | 'promo'>('todos');
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('todos');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -32,50 +55,55 @@ export function Restaurants() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  const toggleQuick = (f: QuickFilter) => setQuickFilter(cur => (cur === f ? 'todos' : f));
+
+  const q = search.trim().toLowerCase();
   const filtered = restaurants
     .filter(r =>
       (category === 'todos' || r.category === category) &&
       (quickFilter !== 'aberto' || r.is_open_today) &&
       (quickFilter !== 'frete' || r.free_shipping) &&
       (quickFilter !== 'promo' || !!r.promo_text) &&
-      (r.name.toLowerCase().includes(search.toLowerCase()) ||
-       r.description.toLowerCase().includes(search.toLowerCase()))
+      (!q || r.name.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q))
     )
     .sort((a, b) => Number(b.is_open_today) - Number(a.is_open_today));
 
+  const openCount = restaurants.filter(r => r.is_open_today).length;
   const title = category === 'todos' ? 'Estabelecimentos' : getCategory(category).labelPlural;
+  const hasFilters = category !== 'todos' || quickFilter !== 'todos' || !!q;
+
+  const iconBtn = 'relative flex items-center justify-center w-10 h-10 rounded-full bg-[#f1f5ec] hover:bg-[#e3ede0] text-[#2D5016]';
 
   return (
     <div className="min-h-screen bg-[#f7f5f0]">
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-[#e3ede0] sticky top-0 z-10 shadow-[0_1px_12px_rgba(45,80,22,0.06)]">
-        <div className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="" className="h-9 w-auto object-contain" />
-            <span className="font-black text-lg text-[#2D5016] tracking-tight">Floresta Já</span>
+      <header className="bg-white/95 backdrop-blur-md border-b border-[#eceee8] sticky top-0 z-30">
+        <div className={`${CONTAINER} h-16 flex items-center justify-between gap-3`}>
+          <Link to="/" className="flex items-center gap-2 min-w-0">
+            <img src={logo} alt="" className="h-8 w-auto object-contain shrink-0" />
+            <span className="font-black text-[17px] text-[#2D5016] tracking-tight truncate">Floresta Já</span>
           </Link>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 shrink-0">
             {user ? (
               user.role === 'restaurant_owner' ? (
                 <>
-                  <Link to="/meu-restaurante" className="flex items-center gap-1.5 text-sm font-semibold text-[#2D5016] hover:underline">
-                    <UtensilsCrossed size={15} /> Meu estabelecimento
+                  <Link to="/meu-restaurante" className="flex items-center gap-1.5 h-10 px-3 rounded-full bg-[#f1f5ec] text-sm font-semibold text-[#2D5016]">
+                    <UtensilsCrossed size={15} /> <span className="hidden sm:inline">Meu estabelecimento</span><span className="sm:hidden">Painel</span>
                   </Link>
-                  <button onClick={logout} className="text-sm text-[#777] hover:text-[#333] transition-colors">
-                    Sair
+                  <button onClick={logout} className={iconBtn} aria-label="Sair">
+                    <LogOut size={17} />
                   </button>
                 </>
               ) : (
-                <div className="flex items-center gap-2">
-                  {/* Sino de notificações */}
+                <>
                   <NotificationBell userId={user.id} />
 
-                  {/* Carrinho — sempre visível para clientes */}
                   {(user.role === 'client' || user.role === 'admin') && (
-                    <Link to="/cart" className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-[#6BA534] hover:bg-[#2D5016] transition-colors">
-                      <ShoppingCart size={17} className="text-white" />
+                    <Link to="/cart" className={iconBtn} aria-label="Carrinho">
+                      <ShoppingCart size={18} />
                       {totalItems > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center leading-none">
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 ring-2 ring-white text-white text-[10px] font-black flex items-center justify-center leading-none">
                           {totalItems}
                         </span>
                       )}
@@ -83,46 +111,49 @@ export function Restaurants() {
                   )}
 
                   <div className="relative" ref={menuRef}>
-                  <button
-                    onClick={() => setMenuOpen(o => !o)}
-                    className="flex items-center gap-1.5 text-sm font-semibold text-[#2D5016] hover:bg-[#e8f5e0] px-2.5 py-1.5 rounded-xl transition-colors"
-                  >
-                    <User size={15} />
-                    <span className="max-w-[100px] truncate">{user.name?.split(' ')[0] ?? 'Conta'}</span>
-                    <ChevronDown size={14} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {menuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-20">
-                      <Link to="/meus-pedidos" onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#444] hover:bg-[#f7f5f0] transition-colors">
-                        <Package size={15} className="text-[#6BA534]" /> Pedidos
-                      </Link>
-                      <Link to="/meus-dados" onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#444] hover:bg-[#f7f5f0] transition-colors">
-                        <User size={15} className="text-[#6BA534]" /> Meu perfil
-                      </Link>
-                      {user.role === 'admin' && (
-                        <>
+                    <button
+                      onClick={() => setMenuOpen(o => !o)}
+                      aria-label="Minha conta"
+                      className="flex items-center gap-1 h-10 pl-1 pr-2 rounded-full bg-[#f1f5ec] hover:bg-[#e3ede0] text-[#2D5016]"
+                    >
+                      <span className="w-8 h-8 rounded-full bg-[#2D5016] text-white text-sm font-bold flex items-center justify-center uppercase">
+                        {user.name?.trim()?.[0] ?? <User size={15} />}
+                      </span>
+                      <ChevronDown size={14} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {menuOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-[var(--shadow-lg)] border border-gray-100 py-1.5 z-40 animate-scale-in">
+                        <div className="px-4 py-2.5 border-b border-gray-100 mb-1">
+                          <p className="text-sm font-bold text-[#1a1a1a] truncate">{user.name ?? 'Minha conta'}</p>
+                        </div>
+                        <Link to="/meus-pedidos" onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#444] hover:bg-[#f7f5f0]">
+                          <Package size={15} className="text-[#6BA534]" /> Pedidos
+                        </Link>
+                        <Link to="/meus-dados" onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#444] hover:bg-[#f7f5f0]">
+                          <User size={15} className="text-[#6BA534]" /> Meu perfil
+                        </Link>
+                        {user.role === 'admin' && (
                           <Link to="/admin" onClick={() => setMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-[#2D5016] hover:bg-[#e8f5e0] transition-colors">
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-[#2D5016] hover:bg-[#e8f5e0]">
                             <ShieldCheck size={15} className="text-[#6BA534]" /> Painel administrativo
                           </Link>
-                        </>
-                      )}
-                      <div className="border-t border-gray-100 my-1" />
-                      <button
-                        onClick={() => { setMenuOpen(false); logout(); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
-                      >
-                        <LogOut size={15} /> Sair
-                      </button>
-                    </div>
-                  )}
-                </div>
-                </div>
+                        )}
+                        <div className="border-t border-gray-100 my-1" />
+                        <button
+                          onClick={() => { setMenuOpen(false); logout(); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
+                        >
+                          <LogOut size={15} /> Sair
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
               )
             ) : (
-              <Link to="/login" className="text-sm font-semibold text-[#2D5016] hover:underline">
+              <Link to="/login" className="h-10 px-4 rounded-full bg-[#2D5016] text-white text-sm font-semibold flex items-center">
                 Entrar
               </Link>
             )}
@@ -130,258 +161,186 @@ export function Restaurants() {
         </div>
       </header>
 
-      <main className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-8">
-        {/* Title */}
-        <div className="mb-5 animate-fade-in-up">
-          <h1 className="text-[28px] sm:text-4xl font-black tracking-tight bg-gradient-to-r from-[#2D5016] via-[#4a8526] to-[#6BA534] bg-clip-text text-transparent drop-shadow-sm">{title}</h1>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <span className="flex items-center gap-1 bg-[#e8f5e0] text-[#2D5016] text-xs font-bold px-2.5 py-1 rounded-full">
-              <MapPin size={12} />
-              Floresta - PE - ATT
-            </span>
+      <main className={`${CONTAINER} pt-5 pb-10 flex flex-col gap-6`}>
+        {/* Título + busca */}
+        <section className="flex flex-col gap-4 animate-fade-in-up">
+          <div>
+            <p className="flex items-center gap-1 text-[13px] font-semibold text-[#6BA534]">
+              <MapPin size={14} /> Floresta, PE
+            </p>
+            <h1 className="mt-1 text-[26px] sm:text-3xl leading-tight font-black tracking-tight text-[#1f3a0f]">{title}</h1>
+            {!isLoading && (
+              <p className="mt-1 text-sm text-[#7a8274]">
+                <span className="font-semibold text-[#2D5016]">{openCount} abertos agora</span>
+                {' · '}{restaurants.length} no total
+              </p>
+            )}
           </div>
-        </div>
 
-        {/* Resumo rápido */}
-        <div className="grid grid-cols-3 gap-3 mb-7 animate-fade-in-up">
-          <div className="bg-white rounded-2xl p-3.5 shadow-[0_2px_14px_rgba(20,40,10,0.06)] flex flex-col gap-1">
-            <div className="w-8 h-8 rounded-xl bg-[#e8f5e0] flex items-center justify-center">
-              <UtensilsCrossed size={15} className="text-[#2D5016]" />
-            </div>
-            <span className="text-lg font-black text-[#1a1a1a] leading-none mt-0.5">{restaurants.length}</span>
-            <span className="text-[11px] text-[#999] font-medium">Estabelecimentos</span>
-          </div>
-          <div className="bg-white rounded-2xl p-3.5 shadow-[0_2px_14px_rgba(20,40,10,0.06)] flex flex-col gap-1">
-            <div className="w-8 h-8 rounded-xl bg-[#e8f5e0] flex items-center justify-center">
-              <span className="w-2 h-2 rounded-full bg-[#6BA534] animate-pulse" />
-            </div>
-            <span className="text-lg font-black text-[#1a1a1a] leading-none mt-0.5">{restaurants.filter(r => r.is_open_today).length}</span>
-            <span className="text-[11px] text-[#999] font-medium">Abertos agora</span>
-          </div>
-          <div className="bg-white rounded-2xl p-3.5 shadow-[0_2px_14px_rgba(20,40,10,0.06)] flex flex-col gap-1">
-            <div className="w-8 h-8 rounded-xl bg-[#e8f5e0] flex items-center justify-center">
-              <MapPin size={15} className="text-[#2D5016]" />
-            </div>
-            <span className="text-lg font-black text-[#1a1a1a] leading-none mt-0.5">Floresta</span>
-            <span className="text-[11px] text-[#999] font-medium">Pernambuco</span>
-          </div>
-        </div>
-
-        {/* Carrossel de promoções */}
-        <PromotionsCarousel />
-
-        {/* Search */}
-        <div className="relative mb-6">
-          <div className="flex items-center bg-white border-2 border-[#e3ede0] rounded-2xl shadow-sm focus-within:border-[#6BA534] focus-within:ring-4 focus-within:ring-[#6BA534]/12 transition-all overflow-hidden">
-            <div className="shrink-0 w-11 h-11 ml-1.5 my-1.5 rounded-xl bg-[#e8f5e0] flex items-center justify-center">
-              <Search size={17} className="text-[#2D5016]" />
-            </div>
+          <label className="flex items-center gap-2.5 h-12 px-4 bg-white border border-[#e3e8dd] rounded-2xl focus-within:border-[#6BA534] focus-within:ring-4 focus-within:ring-[#6BA534]/10">
+            <Search size={18} className="text-[#8a9483] shrink-0" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar por nome, prato ou tipo..."
-              className="flex-1 min-w-0 bg-transparent outline-none px-3 py-3.5 text-sm placeholder:text-[#bbb]"
+              placeholder="Buscar restaurante ou prato"
+              className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-[#1a1a1a] placeholder:text-[#a3aa9d]"
             />
             {search && (
-              <button onClick={() => setSearch('')} className="shrink-0 mr-3 text-[#bbb] hover:text-[#888] transition-colors text-lg leading-none px-1">
-                ×
+              <button onClick={() => setSearch('')} aria-label="Limpar busca" className="shrink-0 w-7 h-7 -mr-1 rounded-full bg-[#f1f5ec] text-[#6b7465] flex items-center justify-center">
+                <X size={14} />
               </button>
             )}
+          </label>
+        </section>
+
+        {/* Categorias + filtros rápidos */}
+        <section className="flex flex-col gap-2.5">
+          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+            <Chip active={category === 'todos'} onClick={() => setCategory('todos')} icon={<Store size={15} />}>Todos</Chip>
+            {CATEGORIES.map(c => {
+              const Icon = c.icon;
+              return (
+                <Chip key={c.id} active={category === c.id} onClick={() => setCategory(c.id)} icon={<Icon size={15} />}>
+                  {c.label}
+                </Chip>
+              );
+            })}
           </div>
-        </div>
-
-        {/* Atalhos circulares de categoria */}
-        <div className="relative mb-5">
-        <div className="flex gap-4 overflow-x-auto pb-1.5 -mx-5 px-5 scrollbar-none">
-          <button onClick={() => setCategory('todos')} className="shrink-0 flex flex-col items-center gap-1.5 group">
-            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-200 ${
-              category === 'todos'
-                ? 'bg-[#2D5016] shadow-[0_6px_16px_rgba(45,80,22,0.35)] scale-105'
-                : 'bg-white border border-[#e3ede0] shadow-sm group-hover:border-[#bcd9a4]'
-            }`}>
-              <Store size={22} className={category === 'todos' ? 'text-white' : 'text-[#6BA534]'} />
-            </div>
-            <span className={`text-[11px] font-semibold ${category === 'todos' ? 'text-[#2D5016]' : 'text-[#888]'}`}>Todos</span>
-          </button>
-          {CATEGORIES.map(c => {
-            const Icon = c.icon;
-            const active = category === c.id;
-            return (
-              <button key={c.id} onClick={() => setCategory(c.id)} className="shrink-0 flex flex-col items-center gap-1.5 group">
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-200 ${
-                  active
-                    ? 'bg-[#2D5016] shadow-[0_6px_16px_rgba(45,80,22,0.35)] scale-105'
-                    : 'bg-white border border-[#e3ede0] shadow-sm group-hover:border-[#bcd9a4]'
-                }`}>
-                  <Icon size={22} className={active ? 'text-white' : 'text-[#6BA534]'} />
-                </div>
-                <span className={`text-[11px] font-semibold whitespace-nowrap ${active ? 'text-[#2D5016]' : 'text-[#888]'}`}>{c.label}</span>
-              </button>
-            );
-          })}
-        </div>
-        {/* Indicador de scroll horizontal */}
-        <div className="pointer-events-none absolute right-0 top-0 bottom-1.5 w-12 bg-gradient-to-l from-[#f7f5f0] to-transparent flex items-center justify-end">
-          <div className="w-6 h-6 rounded-full bg-white shadow-[0_2px_8px_rgba(45,80,22,0.18)] flex items-center justify-center animate-pulse">
-            <ChevronRight size={14} className="text-[#6BA534]" />
+          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+            <Chip active={quickFilter === 'aberto'} onClick={() => toggleQuick('aberto')} icon={<span className={`w-2 h-2 rounded-full ${quickFilter === 'aberto' ? 'bg-white' : 'bg-[#6BA534]'}`} />}>
+              Aberto agora
+            </Chip>
+            <Chip active={quickFilter === 'frete'} onClick={() => toggleQuick('frete')} icon={<Bike size={15} />}>
+              Frete grátis
+            </Chip>
+            <Chip active={quickFilter === 'promo'} onClick={() => toggleQuick('promo')} icon={<Flame size={15} />}>
+              Promoções
+            </Chip>
           </div>
-        </div>
-        </div>
+        </section>
 
-        {/* Chips de filtro rápido */}
-        <div className="flex gap-2 overflow-x-auto pb-1.5 mb-7 -mx-5 px-5 scrollbar-none">
-          <button
-            onClick={() => setQuickFilter(f => f === 'aberto' ? 'todos' : 'aberto')}
-            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
-              quickFilter === 'aberto'
-                ? 'bg-[#2D5016] text-white shadow-[0_4px_12px_rgba(45,80,22,0.3)]'
-                : 'bg-[#e8f5e0] text-[#2D5016] hover:brightness-95'
-            }`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${quickFilter === 'aberto' ? 'bg-white' : 'bg-[#6BA534]'} animate-pulse`} />
-            Aberto agora
-          </button>
-          <button
-            onClick={() => setQuickFilter(f => f === 'frete' ? 'todos' : 'frete')}
-            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
-              quickFilter === 'frete'
-                ? 'bg-[#2D5016] text-white shadow-[0_4px_12px_rgba(45,80,22,0.3)]'
-                : 'bg-[#fff4e0] text-[#b9790a] hover:brightness-95'
-            }`}
-          >
-            🛵 Frete grátis
-          </button>
-          <button
-            onClick={() => setQuickFilter(f => f === 'promo' ? 'todos' : 'promo')}
-            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${
-              quickFilter === 'promo'
-                ? 'bg-[#2D5016] text-white shadow-[0_4px_12px_rgba(45,80,22,0.3)]'
-                : 'bg-[#fde8ea] text-[#c23b52] hover:brightness-95'
-            }`}
-          >
-            🔥 Promoções
-          </button>
-        </div>
+        <PromotionsCarousel />
 
-        {/* List */}
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-2xl p-5 shadow-sm flex items-center gap-4">
-                <div className="skeleton w-16 h-16 shrink-0" />
-                <div className="flex-1 space-y-2.5">
+        {/* Lista */}
+        <section className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-base font-bold text-[#1a1a1a]">
+              {hasFilters ? 'Resultados' : 'Todos os estabelecimentos'}
+            </h2>
+            {!isLoading && <span className="text-xs text-[#8a9483]">{filtered.length} {filtered.length === 1 ? 'local' : 'locais'}</span>}
+          </div>
+
+          {isLoading ? (
+            [1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-2xl p-3 flex gap-3">
+                <div className="skeleton w-[72px] h-[72px] shrink-0" />
+                <div className="flex-1 space-y-2 py-1">
                   <div className="skeleton h-4 rounded w-2/3" />
-                  <div className="skeleton h-3 rounded w-full" />
                   <div className="skeleton h-3 rounded w-1/2" />
+                  <div className="skeleton h-3 rounded w-3/4" />
                 </div>
               </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 animate-fade-in">
-            <div className="w-20 h-20 rounded-full bg-[#e8f5e0] flex items-center justify-center mx-auto mb-4">
-              <Search size={32} className="text-[#6BA534]" />
+            ))
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-14 px-6 bg-white rounded-2xl animate-fade-in">
+              <div className="w-14 h-14 rounded-full bg-[#e8f5e0] flex items-center justify-center mx-auto mb-3">
+                <Search size={24} className="text-[#6BA534]" />
+              </div>
+              <p className="text-[#1a1a1a] font-semibold">Nenhum estabelecimento encontrado</p>
+              <p className="text-sm text-[#8a9483] mt-1">
+                {q ? 'Tente buscar por outro nome.' : 'Ainda não há estabelecimentos nessa categoria.'}
+              </p>
+              {hasFilters && (
+                <button
+                  onClick={() => { setSearch(''); setCategory('todos'); setQuickFilter('todos'); }}
+                  className="mt-4 h-9 px-4 rounded-full bg-[#2D5016] text-white text-sm font-semibold"
+                >
+                  Limpar filtros
+                </button>
+              )}
             </div>
-            <p className="text-[#888] text-lg font-semibold">Nenhum estabelecimento encontrado</p>
-            <p className="text-sm text-[#bbb] mt-1">
-              {search ? 'Tente outra busca' : 'Ainda não há estabelecimentos cadastrados nessa categoria em Floresta - PE'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filtered.map((restaurant, idx) => {
+          ) : (
+            filtered.map((restaurant, idx) => {
               const cat = getCategory(restaurant.category);
               const CatIcon = cat.icon;
+              const open = restaurant.is_open_today;
               return (
                 <Link
                   key={restaurant.id}
                   to={`/restaurantes/${restaurant.id}`}
-                  style={{ animationDelay: `${Math.min(idx, 8) * 45}ms` }}
-                  className="block bg-white rounded-3xl shadow-[0_2px_14px_rgba(20,40,10,0.06)] card-hover animate-fade-in-up border-2 border-transparent hover:border-[#cfe9ba] overflow-hidden"
+                  style={{ animationDelay: `${Math.min(idx, 8) * 40}ms` }}
+                  className="flex gap-3 p-3 bg-white rounded-2xl border border-[#eceee8] hover:border-[#cfe9ba] card-hover animate-fade-in-up"
                 >
-                  <div className="flex items-center gap-4 p-4">
-                    {/* Logo quadrada */}
+                  {/* Logo */}
+                  <div className={`relative w-[72px] h-[72px] shrink-0 rounded-xl overflow-hidden bg-[#f1f5ec] ${open ? '' : 'grayscale opacity-60'}`}>
                     {restaurant.image_url ? (
-                      <img
-                        src={restaurant.image_url}
-                        alt={restaurant.name}
-                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-gray-100"
-                      />
+                      <img src={restaurant.image_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#e8f5e0] to-[#d3ecc0] flex items-center justify-center shrink-0">
+                      <div className="w-full h-full flex items-center justify-center">
                         <CatIcon size={28} className="text-[#6BA534]" />
                       </div>
                     )}
+                  </div>
 
-                    {/* Informações */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <div className="min-w-0">
-                          <h2 className="text-base font-bold text-[#1a1a1a] truncate">{restaurant.name}</h2>
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#6BA534] uppercase tracking-wide">
-                            <CatIcon size={11} /> {cat.label}
-                          </span>
-                        </div>
-                        <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold mr-1 ${
-                          restaurant.is_open_today
-                            ? 'bg-[#e8f5e0] text-[#2D5016]'
-                            : 'bg-red-50 text-red-600'
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${restaurant.is_open_today ? 'bg-[#6BA534]' : 'bg-red-400'}`} />
-                          {restaurant.is_open_today ? 'Aberto' : 'Fechado'}
-                        </span>
-                      </div>
-
-                      {restaurant.description && (
-                        <p className="text-xs text-[#888] mb-2 line-clamp-1 mt-1">{restaurant.description}</p>
-                      )}
-
-                      {/* Selos: frete grátis, promoção, tempo estimado */}
-                      {(restaurant.free_shipping || restaurant.promo_text || restaurant.is_open_today) && (
-                        <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                          {restaurant.is_open_today && (
-                            <span className="inline-flex items-center gap-1 bg-[#eef6f9] text-[#2778a0] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                              ⏱ {restaurant.delivery_time_min}-{restaurant.delivery_time_max} min
-                            </span>
-                          )}
-                          {restaurant.free_shipping && (
-                            <span className="inline-flex items-center gap-1 bg-[#fff4e0] text-[#b9790a] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                              🛵 Frete grátis
-                            </span>
-                          )}
-                          {restaurant.promo_text && (
-                            <span className="inline-flex items-center gap-1 bg-[#fde8ea] text-[#c23b52] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                              🔥 {restaurant.promo_text}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <span className="flex items-center gap-1 text-xs text-[#999]">
-                          <Clock size={11} className="text-[#6BA534]" />
-                          {formatTime(restaurant.open_time)} – {formatTime(restaurant.close_time)}
-                        </span>
-                        {restaurant.address && (
-                          <span className="flex items-center gap-1 text-xs text-[#999] truncate max-w-[160px]">
-                            <MapPin size={11} className="text-[#6BA534] shrink-0" />
-                            {restaurant.address}
-                          </span>
-                        )}
-                        {restaurant.phone && (
-                          <span className="flex items-center gap-1 text-xs text-[#999]">
-                            <Phone size={11} className="text-[#6BA534]" />
-                            {restaurant.phone}
-                          </span>
-                        )}
-                      </div>
+                  {/* Informações */}
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-[15px] leading-snug font-bold text-[#1a1a1a] truncate">{restaurant.name}</h3>
+                      <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold ${open ? 'text-[#4a8526]' : 'text-[#b4453a]'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${open ? 'bg-[#6BA534]' : 'bg-[#d0675c]'}`} />
+                        {open ? 'Aberto' : 'Fechado'}
+                      </span>
                     </div>
+
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#6b7465] min-w-0">
+                      <span className="shrink-0">{cat.label}</span>
+                      {open && (
+                        <>
+                          <span className="text-[#c6cbc1]">•</span>
+                          <span className="shrink-0 inline-flex items-center gap-1">
+                            <Timer size={12} /> {restaurant.delivery_time_min}–{restaurant.delivery_time_max} min
+                          </span>
+                        </>
+                      )}
+                    </p>
+
+                    {restaurant.description && (
+                      <p className="mt-1 text-xs text-[#8a9483] line-clamp-1">{restaurant.description}</p>
+                    )}
+
+                    {(restaurant.free_shipping || restaurant.promo_text) && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {restaurant.free_shipping && (
+                          <span className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-[#fff4e0] text-[#9a6408] text-[11px] font-semibold">
+                            <Bike size={12} /> Frete grátis
+                          </span>
+                        )}
+                        {restaurant.promo_text && (
+                          <span className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-[#fdecee] text-[#b5354b] text-[11px] font-semibold max-w-full">
+                            <Flame size={12} className="shrink-0" /> <span className="truncate">{restaurant.promo_text}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <p className="mt-auto pt-1.5 flex items-center gap-1.5 text-[11px] text-[#9aa294] min-w-0">
+                      <span className="shrink-0 inline-flex items-center gap-1">
+                        <Clock size={11} /> {formatTime(restaurant.open_time)}–{formatTime(restaurant.close_time)}
+                      </span>
+                      {restaurant.address && (
+                        <>
+                          <span className="text-[#c6cbc1]">•</span>
+                          <MapPin size={11} className="shrink-0" />
+                          <span className="truncate">{restaurant.address}</span>
+                        </>
+                      )}
+                    </p>
                   </div>
                 </Link>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </section>
       </main>
       <Footer />
     </div>

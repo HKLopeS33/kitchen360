@@ -14,6 +14,7 @@ import { useMyPromotions, type Promotion } from '../helpers/usePromotions';
 import { Button } from '../components/Button';
 import { ImageUpload } from '../components/ImageUpload';
 import { OrdersPanel } from '../components/OrdersPanel';
+import { supabase } from '../lib/supabase';
 import type { MenuItem } from '../lib/supabase';
 import { CATEGORIES, type Category } from '../lib/categories';
 
@@ -49,10 +50,13 @@ export function RestaurantDashboard() {
   const [form, setForm] = useState({
     name: '', description: '', phone: '', address: '',
     open_time: '08:00', close_time: '18:00', image_url: '', is_open_today: false,
-    mp_access_token: '', category: 'restaurante' as Category,
+    category: 'restaurante' as Category,
     free_shipping: false, promo_text: '', delivery_time_min: 30, delivery_time_max: 50,
   });
   const [showToken, setShowToken] = useState(false);
+  // Token do Mercado Pago: só é enviado ao banco, nunca lido de volta.
+  const [mpTokenInput, setMpTokenInput] = useState('');
+  const [mpConfigured, setMpConfigured] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
@@ -66,7 +70,6 @@ export function RestaurantDashboard() {
         close_time: restaurant.close_time.slice(0, 5),
         image_url: restaurant.image_url ?? '',
         is_open_today: restaurant.is_open_today,
-        mp_access_token: restaurant.mp_access_token ?? '',
         category: (restaurant.category as Category) ?? 'restaurante',
         free_shipping: restaurant.free_shipping ?? false,
         promo_text: restaurant.promo_text ?? '',
@@ -117,6 +120,21 @@ export function RestaurantDashboard() {
     catch (err: any) { toast.error(err.message); }
   }
 
+  useEffect(() => {
+    if (!restaurant?.id) return;
+    supabase.rpc('restaurant_mp_token_configured', { p_restaurant_id: restaurant.id })
+      .then(({ data }) => setMpConfigured(data === true));
+  }, [restaurant?.id]);
+
+  async function saveMpToken(restaurantId: string) {
+    if (!mpTokenInput.trim()) return;
+    const { error } = await supabase.rpc('set_restaurant_mp_token', { p_restaurant_id: restaurantId, p_token: mpTokenInput.trim() });
+    if (error) throw new Error(`Dados salvos, mas o token não: ${error.message}`);
+    setMpTokenInput('');
+    setShowToken(false);
+    setMpConfigured(true);
+  }
+
   const field = (key: keyof typeof form) => ({
     value: form[key] as string,
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [key]: e.target.value })),
@@ -128,10 +146,10 @@ export function RestaurantDashboard() {
     if (!restaurant && !acceptedTerms) { toast.error('Você precisa aceitar a política de uso e assinatura para continuar.'); return; }
     setSaving(true);
     try {
-      const payload: any = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, mp_access_token: form.mp_access_token.trim() || null, category: form.category, free_shipping: form.free_shipping, promo_text: form.promo_text.trim() || null, delivery_time_min: Number(form.delivery_time_min) || 30, delivery_time_max: Number(form.delivery_time_max) || 50 };
+      const payload: any = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, category: form.category, free_shipping: form.free_shipping, promo_text: form.promo_text.trim() || null, delivery_time_min: Number(form.delivery_time_min) || 30, delivery_time_max: Number(form.delivery_time_max) || 50 };
       if (!restaurant) payload.accepted_terms_at = new Date().toISOString();
-      if (restaurant) { await updateRestaurant(payload); toast.success('Dados atualizados!'); }
-      else { await createRestaurant(payload); toast.success('Restaurante cadastrado!'); setTab('pedidos'); }
+      if (restaurant) { await updateRestaurant(payload); await saveMpToken(restaurant.id); toast.success('Dados atualizados!'); }
+      else { const created = await createRestaurant(payload); await saveMpToken(created.id); toast.success('Restaurante cadastrado!'); setTab('pedidos'); }
     } catch (err: any) { toast.error(err.message); }
     finally { setSaving(false); }
   }
@@ -563,7 +581,7 @@ export function RestaurantDashboard() {
                       <h3 className="font-bold text-sm text-[#2D5016] flex items-center gap-2">
                         <Wallet size={16} /> Pagamentos online
                       </h3>
-                      {form.mp_access_token.trim() ? (
+                      {mpConfigured ? (
                         <span className="flex items-center gap-1 text-xs font-semibold text-[#2D5016] bg-[#e8f5e0] px-2.5 py-1 rounded-full">
                           <CheckCircle2 size={13} /> Configurado
                         </span>
@@ -583,9 +601,10 @@ export function RestaurantDashboard() {
                       <div className="relative">
                         <input
                           type={showToken ? 'text' : 'password'}
-                          value={form.mp_access_token}
-                          onChange={e => setForm(f => ({ ...f, mp_access_token: e.target.value }))}
-                          placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                          value={mpTokenInput}
+                          onChange={e => setMpTokenInput(e.target.value)}
+                          autoComplete="off"
+                          placeholder={mpConfigured ? 'Token salvo — cole um novo para trocar' : 'APP_USR-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
                           className="w-full border border-gray-200 rounded-xl pl-4 pr-10 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all font-mono"
                         />
                         <button type="button" onClick={() => setShowToken(s => !s)}

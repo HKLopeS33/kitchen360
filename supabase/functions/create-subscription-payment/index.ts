@@ -21,21 +21,38 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { restaurantId, restaurantName, payerEmail, payerName, paymentMethod } = body;
+    const { restaurantId, paymentMethod } = body;
 
     if (!restaurantId) return ok({ error: 'restaurantId obrigatório' });
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SVC_KEY);
 
-    // 1) Busca token MP do superadmin + valor da mensalidade
-    const { data: settings } = await supabase
-      .from('app_settings')
-      .select('key, value')
-      .in('key', ['admin_mp_token', 'monthly_fee']);
+    // Só o dono do estabelecimento (ou admin) gera a cobrança dele.
+    const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    const { data: auth } = await supabase.auth.getUser(jwt);
+    const user = auth?.user;
+    if (!user) return ok({ error: 'Faça login para pagar' });
 
-    const settingsMap = Object.fromEntries((settings ?? []).map((s: any) => [s.key, s.value]));
-    const adminToken  = settingsMap['admin_mp_token']?.trim();
-    const monthlyFee  = Number(settingsMap['monthly_fee'] ?? 49.90);
+    const { data: restaurant } = await supabase
+      .from('restaurants')
+      .select('id, name, owner_id')
+      .eq('id', restaurantId)
+      .maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (!restaurant || (restaurant.owner_id !== user.id && profile?.role !== 'admin')) {
+      return ok({ error: 'Estabelecimento não encontrado' });
+    }
+    const restaurantName = restaurant.name;
+    const payerEmail = user.email;
+    const payerName = user.user_metadata?.name ?? 'Responsável';
+
+    // 1) Token MP do admin (tabela privada) + valor da mensalidade
+    const [{ data: secret }, { data: feeRow }] = await Promise.all([
+      supabase.from('platform_secrets').select('value').eq('key', 'admin_mp_token').maybeSingle(),
+      supabase.from('app_settings').select('value').eq('key', 'monthly_fee').maybeSingle(),
+    ]);
+    const adminToken = secret?.value?.trim();
+    const monthlyFee = Number(feeRow?.value ?? 49.90);
 
     if (!adminToken) {
       return ok({ error: 'O administrador ainda não configurou o token de pagamento. Entre em contato.' });
@@ -61,7 +78,7 @@ Deno.serve(async (req) => {
       },
       // Prefixo "sub_" diferencia pagamentos de assinatura dos pedidos no webhook
       external_reference: `sub_${restaurantId}`,
-      notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+      notification_url: `${SUPABASE_URL}/functions/v1/payment-webhook?src=sub`,
       statement_descriptor: 'FLORESTA JA',
     };
 
@@ -92,10 +109,11 @@ Deno.serve(async (req) => {
     });
 
     const mpBody = await mpRes.text();
-    console.log('MP subscription response:', mpRes.status, mpBody.slice(0, 300));
+    console.log('MP subscription response:', mpRes.status);
 
     if (!mpRes.ok) {
-      return ok({ error: 'Erro ao criar pagamento: token inválido ou expirado', detail: mpBody });
+      console.error('MP error body:', mpBody.slice(0, 500));
+      return ok({ error: 'Erro ao criar pagamento: token inválido ou expirado' });
     }
 
     const pref = JSON.parse(mpBody);
@@ -108,6 +126,6 @@ Deno.serve(async (req) => {
 
   } catch (err) {
     console.error('create-subscription-payment error:', err);
-    return ok({ error: String(err) });
+    return ok({ error: 'Erro ao criar pagamento' });
   }
 });

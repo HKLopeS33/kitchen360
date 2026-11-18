@@ -23,7 +23,7 @@ export function PromotionsCarousel() {
 
   if (isLoading) {
     return (
-      <div className="mb-4">
+      <div>
         <div className="h-5 w-36 bg-gray-200 rounded-lg mb-3 animate-pulse" />
         <div className="flex gap-3 overflow-hidden">
           {[1, 2].map(i => <div key={i} className="w-52 h-28 rounded-2xl bg-gray-200 animate-pulse shrink-0" />)}
@@ -35,15 +35,15 @@ export function PromotionsCarousel() {
   if (promotions.length === 0) return null;
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-2.5">
+    <div>
+      <div className="flex items-center justify-between mb-3">
         <h2 className="font-black text-[#1a1a1a] text-base flex items-center gap-1.5">
           <Tag size={16} className="text-[#6BA534]" /> Promoções da semana
         </h2>
         <span className="text-xs text-[#999]">{promotions.length} oferta{promotions.length !== 1 ? 's' : ''}</span>
       </div>
 
-      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide -mx-1 px-1">
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0">
         {promotions.map((p, idx) => {
           const grad = BG_GRADIENTS[idx % BG_GRADIENTS.length];
           const badgeBg = TYPE_COLORS[p.type] ?? 'bg-[#2D5016]';

@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* IMPORTANTE: no Tailwind v4 os utilitários vivem em @layer utilities, e CSS fora de layer
+   vence qualquer layer. Por isso todo estilo global aqui fica em @layer base / components —
+   senão regras como "* { padding:0 }" ou "a { color:inherit }" anulam p-*, m-*, text-white etc.
+   O reset (margin/padding/box-sizing) já vem do preflight do Tailwind. */
 
 :root {
   --brand: #2D5016;
@@ -13,6 +16,7 @@
   --shadow-lg: 0 12px 32px rgba(20, 40, 10, 0.12), 0 4px 12px rgba(20, 40, 10, 0.06);
 }
 
+@layer base {
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
@@ -35,12 +39,6 @@ body {
 
 a { text-decoration: none; color: inherit; }
 
-/* Respeita áreas seguras em apps nativos (notch, barra de gestos) somadas ao espaçamento lateral */
-.safe-px {
-  padding-left: calc(env(safe-area-inset-left, 0px) + 1.25rem);
-  padding-right: calc(env(safe-area-inset-right, 0px) + 1.25rem);
-}
-
 #root {
   min-height: 100vh;
   max-width: 100%;
@@ -55,9 +53,6 @@ a { text-decoration: none; color: inherit; }
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(45, 80, 22, 0.32); }
-
-.scrollbar-none::-webkit-scrollbar { display: none; }
-.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 
 /* Foco acessível e elegante em todos os elementos interativos */
 :focus-visible {
@@ -74,6 +69,18 @@ button, a, input, textarea, select {
 }
 
 button:active:not(:disabled) { transform: scale(0.97); }
+}
+
+@layer components {
+/* Respeita áreas seguras em apps nativos (notch, barra de gestos) somadas ao espaçamento lateral */
+.safe-px {
+  padding-left: calc(env(safe-area-inset-left, 0px) + 1.25rem);
+  padding-right: calc(env(safe-area-inset-right, 0px) + 1.25rem);
+}
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+}
 
 /* Animações de entrada usadas em cards, modais, listas, etc. */
 @keyframes fade-in-up {
@@ -97,6 +104,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .animate-fade-in { animation: fade-in 0.25s ease both; }
 .animate-scale-in { animation: scale-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+@layer components {
 /* Skeleton de carregamento com brilho sutil, mais agradável que pulse simples */
 .skeleton {
   position: relative;
@@ -125,4 +133,5 @@ button:active:not(:disabled) { transform: scale(0.97); }
 /* Efeito de destaque suave (glow) usado em elementos ativos/selecionados */
 .glow-brand {
   box-shadow: 0 0 0 4px rgba(107, 165, 52, 0.14);
+}
 }

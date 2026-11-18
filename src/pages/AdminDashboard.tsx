@@ -37,6 +37,7 @@ export function AdminDashboard() {
   const [adminToken, setAdminToken] = useState('');
   const [showToken, setShowToken] = useState(false);
   const [savingToken, setSavingToken] = useState(false);
+  const [tokenConfigured, setTokenConfigured] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -46,17 +47,21 @@ export function AdminDashboard() {
 
   useEffect(() => { setFeeInput(String(fee)); }, [fee]);
 
-  // Carrega token do admin ao montar
+  // O token nunca volta para o navegador: só perguntamos ao banco se ele existe.
   useEffect(() => {
-    supabase.from('app_settings').select('value').eq('key', 'admin_mp_token').maybeSingle()
-      .then(({ data }) => { if (data?.value) setAdminToken(data.value); });
+    supabase.rpc('admin_mp_token_configured')
+      .then(({ data }) => setTokenConfigured(data === true));
   }, []);
 
   async function handleSaveToken() {
     if (!adminToken.trim()) { toast.error('Informe o Access Token'); return; }
     setSavingToken(true);
     try {
-      await supabase.from('app_settings').upsert({ key: 'admin_mp_token', value: adminToken.trim(), updated_at: new Date().toISOString() });
+      const { error } = await supabase.rpc('set_admin_mp_token', { p_token: adminToken.trim() });
+      if (error) throw new Error(error.message);
+      setAdminToken('');
+      setShowToken(false);
+      setTokenConfigured(true);
       toast.success('Token salvo! Pagamentos de mensalidade serão direcionados à sua conta.');
     } catch (err: any) { toast.error(err.message); }
     finally { setSavingToken(false); }
@@ -175,7 +180,7 @@ export function AdminDashboard() {
                 type={showToken ? 'text' : 'password'}
                 value={adminToken}
                 onChange={e => setAdminToken(e.target.value)}
-                placeholder="APP_USR-xxxxxxxxxxxxxxxx"
+                placeholder={tokenConfigured ? 'Token salvo — cole um novo para trocar' : 'APP_USR-xxxxxxxxxxxxxxxx'}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 text-sm font-mono outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
               />
               <button type="button" onClick={() => setShowToken(s => !s)}
@@ -188,10 +193,12 @@ export function AdminDashboard() {
               <Check size={13} /> Salvar
             </button>
           </div>
-          {adminToken && (
+          {tokenConfigured ? (
             <p className="text-[11px] text-[#6BA534] flex items-center gap-1">
               <CheckCircle2 size={11} /> Token configurado — pagamentos ativos
             </p>
+          ) : (
+            <p className="text-[11px] text-orange-600">Nenhum token configurado — mensalidades online desativadas.</p>
           )}
         </div>
 

@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Quando o pagamento é aprovado, o pedido sai de "aguardando pagamento"
 // e entra na fila do estabelecimento como "pending" (recém-recebido).
@@ -10,146 +10,185 @@ const statusMap: Record<string, string> = {
   rejected:   'cancelled',
   cancelled:  'cancelled',
   refunded:   'cancelled',
+  charged_back: 'cancelled',
 };
 
+type MpPayment = { status: string; external_reference?: string; transaction_amount?: number };
+
+async function fetchPayment(id: string, token: string): Promise<MpPayment | null> {
+  if (!token) return null;
+  const r = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  return r.ok ? await r.json() : null;
+}
+
+async function adminToken(db: SupabaseClient) {
+  const { data } = await db.from('platform_secrets').select('value').eq('key', 'admin_mp_token').maybeSingle();
+  return data?.value?.trim() ?? '';
+}
+
+async function restaurantToken(db: SupabaseClient, restaurantId: string) {
+  const { data } = await db.from('restaurant_secrets').select('mp_access_token').eq('restaurant_id', restaurantId).maybeSingle();
+  return data?.mp_access_token?.trim() ?? '';
+}
+
 Deno.serve(async (req) => {
-  const FALLBACK_MP_TOKEN    = Deno.env.get('MP_ACCESS_TOKEN') ?? '';
   const SUPABASE_URL         = Deno.env.get('SUPABASE_URL') ?? '';
   const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
   try {
     const url   = new URL(req.url);
-    const topic = url.searchParams.get('topic') ?? url.searchParams.get('type');
-    const id    = url.searchParams.get('id') ?? url.searchParams.get('data.id');
+    let topic = url.searchParams.get('topic') ?? url.searchParams.get('type');
+    let id    = url.searchParams.get('id') ?? url.searchParams.get('data.id');
 
-    console.log('webhook received:', { topic, id });
-
-    if (topic !== 'payment') return new Response('ok', { status: 200 });
-    if (!id) return new Response('no id', { status: 400 });
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-    // -------------------------------------------------------------
-    // MODELO 3: cada restaurante tem sua própria conta/token do MP.
-    // O pagamento foi criado na conta do restaurante, então a consulta
-    // à API do MP precisa ser feita com o token DESSE restaurante —
-    // um token genérico da plataforma não tem permissão para ver o pagamento.
-    //
-    // Para descobrir de qual restaurante é, primeiro tentamos consultar
-    // o pagamento com o token de fallback (caso exista) só para pegar o
-    // external_reference (= número do pedido). Se isso falhar, tentamos
-    // localizar o pedido via payment_id já salvo, ou aceitamos que o
-    // fluxo normal (preference -> external_reference) já nos dá o pedido.
-    // -------------------------------------------------------------
-
-    let payment: any = null;
-    let usedToken = '';
-
-    // 1ª tentativa: token de fallback da plataforma (se configurado)
-    if (FALLBACK_MP_TOKEN) {
-      const r = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
-        headers: { 'Authorization': `Bearer ${FALLBACK_MP_TOKEN}` },
-      });
-      if (r.ok) { payment = await r.json(); usedToken = FALLBACK_MP_TOKEN; }
+    // Notificações no formato "webhook" mandam os dados no corpo.
+    if (req.method === 'POST' && (!topic || !id)) {
+      try {
+        const body = await req.json();
+        topic = topic ?? body?.type ?? body?.topic ?? null;
+        id    = id ?? (body?.data?.id != null ? String(body.data.id) : null);
+      } catch { /* corpo vazio */ }
     }
 
-    // Se não conseguimos com o token de fallback, precisamos achar o
-    // restaurante certo. Para isso, buscamos pedidos recentes ainda
-    // aguardando pagamento e tentamos o token de cada restaurante até
-    // um deles conseguir ler o pagamento (ele só pertence a UMA conta).
-    if (!payment) {
-      const { data: candidates } = await supabase
-        .from('orders')
-        .select('id, order_number, restaurant_id, restaurants!inner(mp_access_token)')
-        .eq('status', 'awaiting_payment')
-        .order('created_at', { ascending: false })
-        .limit(50);
+    const src = url.searchParams.get('src');  // 'order' | 'sub' (preferências novas)
+    const rid = url.searchParams.get('rid');  // restaurante do pedido
 
-      const seen = new Set<string>();
-      for (const o of (candidates ?? []) as any[]) {
-        const token = o.restaurants?.mp_access_token?.trim();
-        if (!token || seen.has(token)) continue;
-        seen.add(token);
-        const r = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (r.ok) {
-          payment = await r.json();
-          usedToken = token;
-          break;
+    console.log('webhook received:', { topic, id, src, rid });
+
+    if (topic !== 'payment') return new Response('ok', { status: 200 });
+    if (!id || !/^\d+$/.test(id)) return new Response('no id', { status: 400 });
+
+    const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+    // Sempre consultamos o pagamento na API do MP — nada do que chega na
+    // notificação é aceito sem essa confirmação.
+    let payment: MpPayment | null = null;
+    let paymentRestaurantId: string | null = null;
+
+    if (src === 'sub') {
+      payment = await fetchPayment(id, await adminToken(db));
+    } else if (src === 'order' && rid) {
+      payment = await fetchPayment(id, await restaurantToken(db, rid));
+      paymentRestaurantId = rid;
+    } else {
+      // Preferências antigas (sem src/rid): tenta o token do admin e os dos
+      // restaurantes com pedidos aguardando pagamento.
+      payment = await fetchPayment(id, await adminToken(db));
+      if (!payment) {
+        const { data: candidates } = await db
+          .from('orders')
+          .select('restaurant_id')
+          .eq('status', 'awaiting_payment')
+          .order('created_at', { ascending: false })
+          .limit(50);
+        const seen = new Set<string>();
+        for (const c of candidates ?? []) {
+          if (seen.has(c.restaurant_id)) continue;
+          seen.add(c.restaurant_id);
+          payment = await fetchPayment(id, await restaurantToken(db, c.restaurant_id));
+          if (payment) { paymentRestaurantId = c.restaurant_id; break; }
         }
       }
     }
 
     if (!payment) {
-      console.error('Não foi possível obter o pagamento com nenhum token disponível');
+      console.error('Não foi possível obter o pagamento', id);
       return new Response('payment not accessible', { status: 200 });
     }
 
-    const mpStatus       = payment.status as string;
-    const externalRef    = payment.external_reference ?? '';
-
-    console.log('payment status:', mpStatus, '| external_reference:', externalRef);
+    const mpStatus    = payment.status;
+    const externalRef = payment.external_reference ?? '';
+    const paid        = Number(payment.transaction_amount ?? 0);
+    console.log('payment status:', mpStatus, '| ref:', externalRef, '| amount:', paid);
 
     // ── Pagamento de ASSINATURA (external_reference começa com "sub_") ──
     if (externalRef.startsWith('sub_')) {
+      if (paymentRestaurantId) {
+        // Pagamento lido com token de restaurante não pode renovar assinatura.
+        console.error('Referência de assinatura em conta de restaurante, ignorando');
+        return new Response('ok', { status: 200 });
+      }
       const restaurantId = externalRef.replace('sub_', '');
-      const paymentId    = String(id);
-      console.log('Subscription payment for restaurant:', restaurantId, '| status:', mpStatus, '| payment_id:', paymentId);
+      if (mpStatus !== 'approved') return new Response('ok', { status: 200 });
 
-      if (mpStatus === 'approved') {
-        // Idempotência: verifica se esse payment_id já foi processado
-        const { data: rest } = await supabase
-          .from('restaurants')
-          .select('subscription_active_until, last_subscription_payment_id')
-          .eq('id', restaurantId)
-          .maybeSingle();
-
-        if (rest?.last_subscription_payment_id === paymentId) {
-          console.log('Pagamento já processado, ignorando duplicata:', paymentId);
-          return new Response('ok', { status: 200 });
-        }
-
-        // Estende 30 dias a partir da data vigente (se ainda no futuro) ou de hoje
-        const base = rest?.subscription_active_until && new Date(rest.subscription_active_until) > new Date()
-          ? new Date(rest.subscription_active_until)
-          : new Date();
-        base.setDate(base.getDate() + 30);
-
-        const { error: subErr } = await supabase
-          .from('restaurants')
-          .update({
-            subscription_status: 'active',
-            subscription_active_until: base.toISOString(),
-            last_subscription_payment_id: paymentId,
-          })
-          .eq('id', restaurantId);
-
-        if (subErr) console.error('Erro ao renovar assinatura:', subErr);
-        else console.log('Assinatura renovada até:', base.toISOString(), '| payment_id salvo:', paymentId);
+      const { data: feeRow } = await db.from('app_settings').select('value').eq('key', 'monthly_fee').maybeSingle();
+      const fee = Number(feeRow?.value ?? 0);
+      if (paid + 0.01 < fee) {
+        console.error(`Valor pago (${paid}) menor que a mensalidade (${fee}); não renovado`);
+        return new Response('ok', { status: 200 });
       }
 
+      const { data: rest } = await db
+        .from('restaurants')
+        .select('subscription_active_until, last_subscription_payment_id')
+        .eq('id', restaurantId)
+        .maybeSingle();
+      if (!rest) return new Response('ok', { status: 200 });
+      if (rest.last_subscription_payment_id === id) {
+        console.log('Pagamento já processado:', id);
+        return new Response('ok', { status: 200 });
+      }
+
+      const base = rest.subscription_active_until && new Date(rest.subscription_active_until) > new Date()
+        ? new Date(rest.subscription_active_until)
+        : new Date();
+      base.setDate(base.getDate() + 30);
+
+      const { error: subErr } = await db
+        .from('restaurants')
+        .update({
+          subscription_status: 'active',
+          subscription_active_until: base.toISOString(),
+          last_subscription_payment_id: id,
+        })
+        .eq('id', restaurantId);
+      if (subErr) console.error('Erro ao renovar assinatura:', subErr);
+      else console.log('Assinatura renovada até:', base.toISOString());
       return new Response('ok', { status: 200 });
     }
 
-    // ── Pagamento de PEDIDO (fluxo normal) ──
-    const orderNumber = externalRef;
-    const newStatus   = statusMap[mpStatus] ?? 'pending';
+    // ── Pagamento de PEDIDO ──
+    const orderNumber = Number(externalRef);
+    if (!Number.isInteger(orderNumber)) return new Response('ok', { status: 200 });
 
-    console.log('order status:', newStatus, '| order_number:', orderNumber, '| token used:', usedToken ? usedToken.slice(0, 12) + '...' : 'none');
-
-    const { data: updatedRows, error } = await supabase
+    const { data: order } = await db
       .from('orders')
-      .update({ status: newStatus, payment_status: mpStatus, payment_id: String(id) })
-      .eq('order_number', Number(orderNumber))
-      .select('id, order_number, status');
+      .select('id, restaurant_id, total, status, payment_id')
+      .eq('order_number', orderNumber)
+      .maybeSingle();
+    if (!order) return new Response('ok', { status: 200 });
 
+    // O pagamento tem que ter sido feito na conta do restaurante do pedido.
+    if (!paymentRestaurantId || paymentRestaurantId !== order.restaurant_id) {
+      console.error('Pagamento não pertence ao restaurante do pedido', { orderNumber });
+      return new Response('ok', { status: 200 });
+    }
+
+    const newStatus = statusMap[mpStatus] ?? 'awaiting_payment';
+
+    if (newStatus === 'pending') {
+      if (paid + 0.01 < Number(order.total)) {
+        console.error(`Valor pago (${paid}) menor que o pedido (${order.total})`);
+        return new Response('ok', { status: 200 });
+      }
+      // Só promove pedidos que ainda aguardam pagamento (notificação repetida
+      // não pode "voltar" um pedido que já está em preparo/entregue).
+      if (order.status !== 'awaiting_payment') return new Response('ok', { status: 200 });
+    } else if (newStatus === 'awaiting_payment' && order.status !== 'awaiting_payment') {
+      return new Response('ok', { status: 200 });
+    }
+
+    const { error } = await db
+      .from('orders')
+      .update({ status: newStatus, payment_status: mpStatus, payment_id: id })
+      .eq('id', order.id);
     if (error) console.error('Supabase update error:', error);
-    console.log('updated orders:', updatedRows);
+    else console.log('pedido', orderNumber, '→', newStatus);
 
     return new Response('ok', { status: 200 });
   } catch (err) {
     console.error('webhook error:', err);
-    return new Response(String(err), { status: 500 });
+    return new Response('error', { status: 500 });
   }
 });

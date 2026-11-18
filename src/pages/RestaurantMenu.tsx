@@ -6,6 +6,7 @@ import { supabase, type Restaurant, type MenuItem } from '../lib/supabase';
 import { useCart } from '../helpers/useCart';
 import { useAuth } from '../helpers/useAuth';
 import { useMenuItems } from '../helpers/useMenuItems';
+import { FloatingCart } from '../components/FloatingCart';
 
 function formatTime(t: string) { return t?.slice(0, 5) ?? '--:--'; }
 function formatPrice(p: number) { return `R$ ${Number(p).toFixed(2).replace('.', ',')}` ; }
@@ -96,7 +97,7 @@ export function RestaurantMenu() {
         </div>
       </header>
 
-      <main className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-6">
+      <main className="max-w-2xl lg:max-w-3xl mx-auto safe-px pt-6 pb-24">
         {/* Restaurant info */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-6 animate-fade-in-up">
           {restaurant.image_url && (
@@ -201,23 +202,7 @@ export function RestaurantMenu() {
         )}
       </main>
 
-      {/* Floating cart bar */}
-      {!isOwner && totalItems > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-transparent pointer-events-none">
-          <div className="max-w-2xl lg:max-w-3xl mx-auto pointer-events-auto">
-            <Link
-              to="/cart"
-              className="flex items-center justify-between bg-gradient-to-b from-[#356019] to-[#2D5016] text-white px-6 py-4 rounded-2xl shadow-xl hover:brightness-110 active:scale-[0.98] transition-all animate-fade-in-up"
-            >
-              <div className="flex items-center gap-3">
-                <span className="bg-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-sm font-black">{totalItems}</span>
-                <span className="font-semibold">Ver carrinho</span>
-              </div>
-              <span className="font-black text-lg">{formatPrice(totalPrice)}</span>
-            </Link>
-          </div>
-        </div>
-      )}
+      {!isOwner && <FloatingCart />}
     </div>
   );
 }

@@ -5,7 +5,14 @@ import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
 import { Button } from '../components/Button';
 
+// Na carga direta da página o usuário chega depois do primeiro render; o key remonta o
+// formulário quando ele carrega, para os campos nascerem preenchidos.
 export function ClientAccount() {
+  const { user } = useAuth();
+  return <ClientAccountForm key={user?.id ?? 'anon'} />;
+}
+
+function ClientAccountForm() {
   const { user, updateProfile, updatePassword, logout } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState(user?.name ?? '');
