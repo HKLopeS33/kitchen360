@@ -53,7 +53,6 @@ function buildExtra(p: {
         ...(last ? { last_name: last } : {}),
         ...(phone ? { phone } : {}),
         ...(address ? { address } : {}),
-        ...(p.createdAt ? { registration_date: p.createdAt } : {}),
       },
       ...(street ? {
         shipments: {

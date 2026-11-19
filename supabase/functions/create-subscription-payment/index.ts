@@ -46,7 +46,6 @@ function buildExtra(p: { fullName: string; phone: string; title: string; amount:
         first_name: first,
         ...(last ? { last_name: last } : {}),
         ...(phone ? { phone } : {}),
-        ...(p.createdAt ? { registration_date: p.createdAt } : {}),
       },
     },
   };

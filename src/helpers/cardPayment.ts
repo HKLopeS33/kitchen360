@@ -20,5 +20,7 @@ export function cardResultMessage(r: CardResult): string {
     cc_rejected_card_error: 'Não foi possível processar este cartão. Tente outro.',
     cc_rejected_blacklist: 'Este cartão não pode ser usado. Tente outro ou pague com Pix.',
   };
-  return map[r.statusDetail] ?? 'Pagamento recusado. Confira os dados ou tente outro cartão.';
+  const text = map[r.statusDetail] ?? 'Pagamento recusado. Confira os dados ou tente outro cartão.';
+  // Código do Mercado Pago no fim, para o suporte saber o motivo exato.
+  return r.statusDetail ? `${text} (código: ${r.statusDetail})` : text;
 }
