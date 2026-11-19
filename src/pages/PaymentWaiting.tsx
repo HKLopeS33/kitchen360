@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { PixPayment, type PixData } from '../components/PixPayment';
 import { CardPaymentForm, type CardFormData } from '../components/CardPaymentForm';
 import { cardResultMessage } from '../helpers/cardPayment';
+import { getMpDeviceId, loadMpDevice } from '../helpers/mpDevice';
 
 type Mode = 'pix' | 'card';
 
@@ -43,10 +44,12 @@ export function PaymentWaiting() {
   const cardMethod = 'credit_card' as const;
   const awaiting = order?.status === 'awaiting_payment';
 
+  useEffect(() => { loadMpDevice(); }, []);
+
   const loadPix = useCallback(async (renew: boolean) => {
     if (!id) return;
     const { data, error } = await supabase.functions.invoke('create-payment', {
-      body: { orderId: id, paymentMethod: 'pix', renew },
+      body: { orderId: id, paymentMethod: 'pix', renew, deviceId: getMpDeviceId() },
     });
     if (error || data?.error || !data?.pix) {
       setPixError(data?.error ?? 'Não foi possível gerar o Pix agora.');
@@ -86,7 +89,7 @@ export function PaymentWaiting() {
   const handleCard = useCallback(async (data: CardFormData) => {
     setCardMessage(null);
     const { data: res, error } = await supabase.functions.invoke('create-payment', {
-      body: { orderId: id, paymentMethod: cardMethod, card: data },
+      body: { orderId: id, paymentMethod: cardMethod, card: data, deviceId: getMpDeviceId() },
     });
     if (error || res?.error || !res?.card) {
       setCardMessage({ tone: 'error', text: res?.error ?? 'Não foi possível processar o pagamento. Tente de novo.' });

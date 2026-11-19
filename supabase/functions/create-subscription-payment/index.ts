@@ -22,9 +22,39 @@ function brasiliaIso(d: Date) {
 
 // Cria um pagamento Pix direto na API (sem página do Mercado Pago) e devolve
 // o QR Code / copia-e-cola para o app mostrar.
+// Dados extras para o antifraude do Mercado Pago (nome completo, telefone, item).
+type Extra = {
+  deviceId?: string;
+  payer: { first_name?: string; last_name?: string };
+  // deno-lint-ignore no-explicit-any
+  additionalInfo: Record<string, any>;
+};
+
+function buildExtra(p: { fullName: string; phone: string; title: string; amount: number; createdAt?: string; deviceId?: string }): Extra {
+  const parts = p.fullName.trim().split(/\s+/).filter(Boolean);
+  const first = (parts[0] ?? 'Responsável').slice(0, 60);
+  const last = parts.slice(1).join(' ').slice(0, 60) || undefined;
+  let digits = p.phone.replace(/\D/g, '');
+  if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2);
+  const phone = digits.length >= 10 ? { area_code: digits.slice(0, 2), number: digits.slice(2) } : undefined;
+  return {
+    deviceId: p.deviceId && /^[\w.:-]{8,600}$/.test(p.deviceId) ? p.deviceId : undefined,
+    payer: { first_name: first, ...(last ? { last_name: last } : {}) },
+    additionalInfo: {
+      items: [{ id: 'mensalidade', title: p.title.slice(0, 256), category_id: 'services', quantity: 1, unit_price: Number(p.amount.toFixed(2)) }],
+      payer: {
+        first_name: first,
+        ...(last ? { last_name: last } : {}),
+        ...(phone ? { phone } : {}),
+        ...(p.createdAt ? { registration_date: p.createdAt } : {}),
+      },
+    },
+  };
+}
+
 async function createPix(token: string, p: {
   amount: number; description: string; email: string; firstName: string;
-  externalRef: string; notificationUrl: string; idempotencyKey: string;
+  externalRef: string; notificationUrl: string; idempotencyKey: string; extra?: Extra;
 }) {
   const res = await fetch('https://api.mercadopago.com/v1/payments', {
     method: 'POST',
@@ -32,12 +62,14 @@ async function createPix(token: string, p: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
       'X-Idempotency-Key': p.idempotencyKey,
+      ...(p.extra?.deviceId ? { 'X-meli-session-id': p.extra.deviceId } : {}),
     },
     body: JSON.stringify({
       transaction_amount: Number(p.amount.toFixed(2)),
       description: p.description.slice(0, 200),
       payment_method_id: 'pix',
-      payer: { email: p.email, first_name: p.firstName.slice(0, 60) },
+      payer: { email: p.email, first_name: p.firstName.slice(0, 60), ...(p.extra?.payer ?? {}) },
+      ...(p.extra ? { additional_info: p.extra.additionalInfo } : {}),
       external_reference: p.externalRef,
       notification_url: p.notificationUrl,
       date_of_expiration: brasiliaIso(new Date(Date.now() + PIX_MINUTES * 60 * 1000)),
@@ -79,7 +111,7 @@ type CardForm = {
 
 async function createCardPayment(token: string, card: CardForm, p: {
   amount: number; maxInstallments: number; description: string; email: string;
-  externalRef: string; notificationUrl: string;
+  externalRef: string; notificationUrl: string; extra?: Extra;
 }) {
   if (!card?.token || !card?.payment_method_id) {
     return { status: 'rejected', statusDetail: 'invalid_form', paymentId: null as string | null, amount: 0 };
@@ -93,6 +125,7 @@ async function createCardPayment(token: string, card: CardForm, p: {
       'Content-Type': 'application/json',
       // O token do cartão é de uso único: mesma chave = mesma tentativa.
       'X-Idempotency-Key': `card_${card.token}`,
+      ...(p.extra?.deviceId ? { 'X-meli-session-id': p.extra.deviceId } : {}),
     },
     body: JSON.stringify({
       transaction_amount: Number(p.amount.toFixed(2)),
@@ -102,12 +135,14 @@ async function createCardPayment(token: string, card: CardForm, p: {
       ...(card.issuer_id ? { issuer_id: Number(card.issuer_id) } : {}),
       payer: {
         email: card.payer?.email || p.email,
+        ...(p.extra?.payer ?? {}),
         ...(ident?.type && ident?.number ? { identification: { type: ident.type, number: ident.number } } : {}),
       },
       description: p.description.slice(0, 200),
       external_reference: p.externalRef,
       notification_url: p.notificationUrl,
       statement_descriptor: 'FLORESTA JA',
+      ...(p.extra ? { additional_info: p.extra.additionalInfo } : {}),
     }),
   });
   const text = await res.text();
@@ -138,7 +173,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { restaurantId, paymentMethod, card } = body;
+    const { restaurantId, paymentMethod, card, deviceId } = body;
 
     if (!restaurantId) return ok({ error: 'restaurantId obrigatório' });
 
@@ -155,7 +190,7 @@ Deno.serve(async (req) => {
       .select('id, name, owner_id')
       .eq('id', restaurantId)
       .maybeSingle();
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const { data: profile } = await supabase.from('profiles').select('role, name, phone').eq('id', user.id).maybeSingle();
     if (!restaurant || (restaurant.owner_id !== user.id && profile?.role !== 'admin')) {
       return ok({ error: 'Estabelecimento não encontrado' });
     }
@@ -175,6 +210,15 @@ Deno.serve(async (req) => {
       return ok({ error: 'O administrador ainda não configurou o token de pagamento. Entre em contato.' });
     }
 
+    const extra = buildExtra({
+      fullName: String(profile?.name || payerName),
+      phone: String(profile?.phone ?? ''),
+      title: `Mensalidade Floresta Já — ${restaurantName ?? 'Estabelecimento'}`,
+      amount: monthlyFee,
+      createdAt: user.created_at,
+      deviceId: typeof deviceId === 'string' ? deviceId : undefined,
+    });
+
     // Pix dentro do app: devolve QR Code / copia-e-cola em vez de link.
     if (paymentMethod === 'pix') {
       const pix = await createPix(adminToken, {
@@ -185,6 +229,7 @@ Deno.serve(async (req) => {
         externalRef: `sub_${restaurantId}`,
         notificationUrl: `${SUPABASE_URL}/functions/v1/payment-webhook?src=sub`,
         idempotencyKey: `sub_${restaurantId}_pix_${Date.now()}`,
+        extra,
       });
       if (!pix) return ok({ error: 'Não foi possível gerar o Pix. Verifique o token de pagamento do administrador.' });
       return ok({ pix, monthlyFee });
@@ -199,6 +244,7 @@ Deno.serve(async (req) => {
         email: (payerEmail && payerEmail.includes('@')) ? payerEmail : 'pagador@florestaja.com',
         externalRef: `sub_${restaurantId}`,
         notificationUrl: `${SUPABASE_URL}/functions/v1/payment-webhook?src=sub`,
+        extra,
       });
 
       if (result.paymentId && result.status === 'approved' && result.amount + 0.01 >= monthlyFee) {

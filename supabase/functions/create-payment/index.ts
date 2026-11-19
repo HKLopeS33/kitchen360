@@ -16,6 +16,63 @@ type OrderItem = { id: string; name: string; price: number; quantity: number };
 
 const PIX_MINUTES = 30;
 
+// Dados extras que o antifraude do Mercado Pago usa para aprovar mais
+// pagamentos: itens, nome completo, telefone e endereço de entrega.
+type Extra = {
+  payer: { first_name?: string; last_name?: string };
+  // deno-lint-ignore no-explicit-any
+  additionalInfo: Record<string, any>;
+  deviceId?: string;
+};
+
+function buildExtra(p: {
+  items: OrderItem[]; fullName: string; phone: string; address: string;
+  city: string; state: string; createdAt?: string; deviceId?: string;
+}): Extra {
+  const parts = p.fullName.trim().split(/\s+/).filter(Boolean);
+  const first = (parts[0] ?? 'Cliente').slice(0, 60);
+  const last = parts.slice(1).join(' ').slice(0, 60) || undefined;
+  let digits = p.phone.replace(/\D/g, '');
+  if (digits.length > 11 && digits.startsWith('55')) digits = digits.slice(2);
+  const phone = digits.length >= 10 ? { area_code: digits.slice(0, 2), number: digits.slice(2) } : undefined;
+  const street = p.address.trim().slice(0, 200);
+  const address = street ? { street_name: street } : undefined;
+  return {
+    payer: { first_name: first, ...(last ? { last_name: last } : {}) },
+    deviceId: p.deviceId && /^[\w.:-]{8,600}$/.test(p.deviceId) ? p.deviceId : undefined,
+    additionalInfo: {
+      items: p.items.map(i => ({
+        id: String(i.id).slice(0, 50),
+        title: String(i.name).slice(0, 256),
+        category_id: 'food',
+        quantity: Number(i.quantity),
+        unit_price: Number(Number(i.price).toFixed(2)),
+      })),
+      payer: {
+        first_name: first,
+        ...(last ? { last_name: last } : {}),
+        ...(phone ? { phone } : {}),
+        ...(address ? { address } : {}),
+        ...(p.createdAt ? { registration_date: p.createdAt } : {}),
+      },
+      ...(street ? {
+        shipments: {
+          receiver_address: { street_name: street, city_name: p.city, state_name: p.state },
+        },
+      } : {}),
+    },
+  };
+}
+
+function mpHeaders(token: string, idempotencyKey: string, deviceId?: string) {
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'X-Idempotency-Key': idempotencyKey,
+    ...(deviceId ? { 'X-meli-session-id': deviceId } : {}),
+  };
+}
+
 // Data no formato que o MP aceita em date_of_expiration (horário de Brasília).
 function brasiliaIso(d: Date) {
   const t = new Date(d.getTime() - 3 * 60 * 60 * 1000);
@@ -26,20 +83,17 @@ function brasiliaIso(d: Date) {
 // o QR Code / copia-e-cola para o app mostrar.
 async function createPix(token: string, p: {
   amount: number; description: string; email: string; firstName: string;
-  externalRef: string; notificationUrl: string; idempotencyKey: string;
+  externalRef: string; notificationUrl: string; idempotencyKey: string; extra?: Extra;
 }) {
   const res = await fetch('https://api.mercadopago.com/v1/payments', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'X-Idempotency-Key': p.idempotencyKey,
-    },
+    headers: mpHeaders(token, p.idempotencyKey, p.extra?.deviceId),
     body: JSON.stringify({
       transaction_amount: Number(p.amount.toFixed(2)),
       description: p.description.slice(0, 200),
       payment_method_id: 'pix',
-      payer: { email: p.email, first_name: p.firstName.slice(0, 60) },
+      payer: { email: p.email, first_name: p.firstName.slice(0, 60), ...(p.extra?.payer ?? {}) },
+      ...(p.extra ? { additional_info: p.extra.additionalInfo } : {}),
       external_reference: p.externalRef,
       notification_url: p.notificationUrl,
       date_of_expiration: brasiliaIso(new Date(Date.now() + PIX_MINUTES * 60 * 1000)),
@@ -93,7 +147,7 @@ type CardForm = {
 
 async function createCardPayment(token: string, card: CardForm, p: {
   amount: number; maxInstallments: number; description: string; email: string;
-  externalRef: string; notificationUrl: string;
+  externalRef: string; notificationUrl: string; extra?: Extra;
 }) {
   if (!card?.token || !card?.payment_method_id) {
     return { status: 'rejected', statusDetail: 'invalid_form', paymentId: null as string | null, amount: 0 };
@@ -102,12 +156,8 @@ async function createCardPayment(token: string, card: CardForm, p: {
   const ident = card.payer?.identification;
   const res = await fetch('https://api.mercadopago.com/v1/payments', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      // O token do cartão é de uso único: mesma chave = mesma tentativa.
-      'X-Idempotency-Key': `card_${card.token}`,
-    },
+    // O token do cartão é de uso único: mesma chave = mesma tentativa.
+    headers: mpHeaders(token, `card_${card.token}`, p.extra?.deviceId),
     body: JSON.stringify({
       transaction_amount: Number(p.amount.toFixed(2)),
       token: card.token,
@@ -116,12 +166,14 @@ async function createCardPayment(token: string, card: CardForm, p: {
       ...(card.issuer_id ? { issuer_id: Number(card.issuer_id) } : {}),
       payer: {
         email: card.payer?.email || p.email,
+        ...(p.extra?.payer ?? {}),
         ...(ident?.type && ident?.number ? { identification: { type: ident.type, number: ident.number } } : {}),
       },
       description: p.description.slice(0, 200),
       external_reference: p.externalRef,
       notification_url: p.notificationUrl,
       statement_descriptor: 'FLORESTA JA',
+      ...(p.extra ? { additional_info: p.extra.additionalInfo } : {}),
     }),
   });
   const text = await res.text();
@@ -151,7 +203,7 @@ Deno.serve(async (req) => {
   const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
   try {
-    const { orderId, paymentMethod, renew, card } = await req.json();
+    const { orderId, paymentMethod, renew, card, deviceId } = await req.json();
     if (!orderId || !paymentMethod) {
       return ok({ error: 'Dados incompletos', detail: 'orderId e paymentMethod são obrigatórios' });
     }
@@ -168,7 +220,7 @@ Deno.serve(async (req) => {
     // a partir do cardápio) — nunca do que o navegador mandou.
     const { data: order, error: orderErr } = await supabase
       .from('orders')
-      .select('id, order_number, restaurant_id, client_id, items, total, status, payment_id')
+      .select('id, order_number, restaurant_id, client_id, client_name, delivery_address, items, total, status, payment_id')
       .eq('id', orderId)
       .maybeSingle();
 
@@ -191,6 +243,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    const [{ data: profile }, { data: rest }] = await Promise.all([
+      supabase.from('profiles').select('name, phone').eq('id', user.id).maybeSingle(),
+      supabase.from('restaurants').select('city, state').eq('id', order.restaurant_id).maybeSingle(),
+    ]);
+    const extra = buildExtra({
+      items: (order.items ?? []) as OrderItem[],
+      fullName: String(profile?.name || order.client_name || user.user_metadata?.name || 'Cliente'),
+      phone: String(profile?.phone ?? ''),
+      address: String(order.delivery_address ?? ''),
+      city: String(rest?.city ?? 'Floresta'),
+      state: String(rest?.state ?? 'PE'),
+      createdAt: user.created_at,
+      deviceId: typeof deviceId === 'string' ? deviceId : undefined,
+    });
+
     // "rid" diz ao webhook qual token usar para conferir o pagamento.
     const notificationUrl = `${SUPABASE_URL}/functions/v1/payment-webhook?src=order&rid=${order.restaurant_id}`;
 
@@ -211,6 +278,7 @@ Deno.serve(async (req) => {
         externalRef: String(order.order_number),
         notificationUrl,
         idempotencyKey: key,
+        extra,
       });
       if (!pix) {
         return ok({ error: 'Não foi possível gerar o Pix. O token de pagamento deste restaurante pode estar inválido ou sem chave Pix cadastrada.' });
@@ -229,6 +297,7 @@ Deno.serve(async (req) => {
         email: user.email ?? '',
         externalRef: String(order.order_number),
         notificationUrl,
+        extra,
       });
 
       if (result.paymentId && result.status === 'approved' && result.amount + 0.01 >= Number(order.total)) {

@@ -10,6 +10,7 @@ import { Button } from '../components/Button';
 import { PixPayment, type PixData } from '../components/PixPayment';
 import { CardPaymentForm, type CardFormData } from '../components/CardPaymentForm';
 import { cardResultMessage } from '../helpers/cardPayment';
+import { getMpDeviceId, loadMpDevice } from '../helpers/mpDevice';
 
 type PaymentMethod = 'pix' | 'credit_card';
 
@@ -41,6 +42,8 @@ export function SubscriptionPage() {
   const [cardMessage, setCardMessage] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
   const [brickKey, setBrickKey] = useState(0);
 
+  useEffect(() => { loadMpDevice(); }, []);
+
   useEffect(() => {
     if (!cardOpen || adminPublicKey !== undefined) return;
     supabase.from('app_settings').select('value').eq('key', 'admin_mp_public_key').maybeSingle()
@@ -51,7 +54,7 @@ export function SubscriptionPage() {
     if (!restaurant) return;
     setCardMessage(null);
     const { data, error } = await supabase.functions.invoke('create-subscription-payment', {
-      body: { restaurantId: restaurant.id, paymentMethod: method, card },
+      body: { restaurantId: restaurant.id, paymentMethod: method, card, deviceId: getMpDeviceId() },
     });
     if (error || data?.error || !data?.card) {
       setCardMessage({ tone: 'error', text: data?.error ?? 'Não foi possível processar o pagamento. Tente de novo.' });
@@ -118,6 +121,7 @@ export function SubscriptionPage() {
       const { data, error } = await supabase.functions.invoke('create-subscription-payment', {
         body: {
           restaurantId: restaurant.id,
+          deviceId: getMpDeviceId(),
           restaurantName: restaurant.name,
           payerEmail: user.email,
           payerName: user.name,

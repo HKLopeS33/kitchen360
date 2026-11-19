@@ -10,6 +10,7 @@ import { useCart } from '../helpers/useCart';
 import { useAuth } from '../helpers/useAuth';
 import { createOrder } from '../helpers/useOrders';
 import { supabase } from '../lib/supabase';
+import { getMpDeviceId, loadMpDevice } from '../helpers/mpDevice';
 
 type PaymentMethod = 'pix' | 'credit_card';
 
@@ -28,6 +29,8 @@ export function Cart() {
   const [address, setAddress] = useState(user?.address ?? '');
 
   // Preenche automaticamente com o endereço cadastrado no perfil do cliente
+  useEffect(() => { loadMpDevice(); }, []);
+
   useEffect(() => {
     if (user?.address && !address) setAddress(user.address);
   }, [user]);
@@ -72,7 +75,7 @@ export function Cart() {
 
       // Pix: gera o QR Code (valores vêm do pedido salvo no banco).
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { orderId: order.id, paymentMethod },
+        body: { orderId: order.id, paymentMethod, deviceId: getMpDeviceId() },
       });
       if (error || data?.error || !data?.pix) {
         toast.error(data?.error ?? 'Não foi possível gerar o Pix. Tente de novo.');
