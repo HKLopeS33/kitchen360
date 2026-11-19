@@ -10,7 +10,6 @@ import { CardPaymentForm, type CardFormData } from '../components/CardPaymentFor
 import { cardResultMessage } from '../helpers/cardPayment';
 
 type Mode = 'pix' | 'card';
-type CardMethod = 'credit_card' | 'debit_card';
 
 function formatPrice(p: number) { return `R$ ${Number(p).toFixed(2).replace('.', ',')}`; }
 
@@ -23,7 +22,6 @@ export function PaymentWaiting() {
   const { order, isLoading, notFound } = useOrderTracking(id ?? null);
 
   const [modeChoice, setModeChoice] = useState<Mode | null>(null);
-  const [cardMethodChoice, setCardMethodChoice] = useState<CardMethod | null>(null);
 
   // ── Pix ──
   // O carrinho já manda o Pix gerado; se a tela for reaberta, buscamos de novo
@@ -40,7 +38,9 @@ export function PaymentWaiting() {
 
   const orderMethod = order?.payment_method;
   const mode: Mode = modeChoice ?? (orderMethod === 'credit_card' || orderMethod === 'debit_card' ? 'card' : 'pix');
-  const cardMethod: CardMethod = cardMethodChoice ?? (orderMethod === 'debit_card' ? 'debit_card' : 'credit_card');
+  // Só crédito: no Brasil a maioria dos cartões é múltipla e o MP os trata
+  // como crédito; o débito online do MP recusa esses cartões.
+  const cardMethod = 'credit_card' as const;
   const awaiting = order?.status === 'awaiting_payment';
 
   const loadPix = useCallback(async (renew: boolean) => {
@@ -124,7 +124,14 @@ export function PaymentWaiting() {
     );
   }
 
-  const analysing = cardMessage?.tone === 'info';
+  // Em análise: logo após pagar, ou ao reabrir a tela com o cartão ainda em revisão.
+  const paymentStatus = order.payment_status;
+  const reviewing = mode === 'card' && (paymentStatus === 'in_process' || paymentStatus === 'pending_review');
+  const rejectedAfterReview = cardMessage?.tone === 'info' && paymentStatus === 'rejected';
+  const analysing = !rejectedAfterReview && (cardMessage?.tone === 'info' || (reviewing && !cardMessage));
+  const errorText = rejectedAfterReview || (mode === 'card' && !cardMessage && paymentStatus === 'rejected')
+    ? 'O pagamento com cartão foi recusado pelo Mercado Pago. Tente outro cartão ou pague com Pix.'
+    : cardMessage?.tone === 'error' ? cardMessage.text : null;
 
   return (
     <div className="min-h-screen bg-[#f7f5f0]">
@@ -188,23 +195,18 @@ export function PaymentWaiting() {
                   <div className="w-14 h-14 rounded-full bg-yellow-50 flex items-center justify-center">
                     <Clock size={26} className="text-yellow-500" />
                   </div>
-                  <p className="text-sm text-[#4a5544] px-2">{cardMessage.text}</p>
+                  <p className="text-sm text-[#4a5544] px-2">{cardMessage?.text ?? 'Pagamento em análise pelo Mercado Pago. Avisaremos assim que for aprovado.'}</p>
                   <p className="text-xs text-[#8a9483]">Pode sair desta tela: o pedido segue sozinho quando for aprovado.</p>
                 </div>
               ) : (
                 <>
-                  <div className="flex gap-2">
-                    {([['credit_card', 'Crédito'], ['debit_card', 'Débito']] as const).map(([m, label]) => (
-                      <button key={m} onClick={() => { setCardMethodChoice(m); setCardMessage(null); }}
-                        className={`h-9 px-4 rounded-full text-sm font-semibold border ${cardMethod === m ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016]' : 'border-[#e3e8dd] text-[#4a5544]'}`}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  <p className="text-xs text-center text-[#7a8274]">
+                    Cartão de crédito. As opções de parcelamento aparecem depois que você digita o número do cartão.
+                  </p>
 
-                  {cardMessage?.tone === 'error' && (
+                  {errorText && (
                     <div className="rounded-xl bg-red-50 text-red-700 text-sm px-4 py-3 flex gap-2">
-                      <AlertTriangle size={16} className="shrink-0 mt-0.5" /> {cardMessage.text}
+                      <AlertTriangle size={16} className="shrink-0 mt-0.5" /> {errorText}
                     </div>
                   )}
 
@@ -225,7 +227,7 @@ export function PaymentWaiting() {
                       amount={Number(order.total)}
                       email={user?.email}
                       method={cardMethod}
-                      maxInstallments={cardMethod === 'debit_card' ? 1 : 12}
+                      maxInstallments={12}
                       onSubmit={handleCard}
                     />
                   )}

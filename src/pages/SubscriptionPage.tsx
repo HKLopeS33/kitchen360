@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Leaf, ShieldCheck, Clock, CheckCircle2, AlertTriangle, XCircle, CreditCard, Smartphone, Wallet } from 'lucide-react';
+import { ArrowLeft, Leaf, ShieldCheck, Clock, CheckCircle2, AlertTriangle, XCircle, CreditCard, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../helpers/useAuth';
@@ -11,12 +11,11 @@ import { PixPayment, type PixData } from '../components/PixPayment';
 import { CardPaymentForm, type CardFormData } from '../components/CardPaymentForm';
 import { cardResultMessage } from '../helpers/cardPayment';
 
-type PaymentMethod = 'pix' | 'credit_card' | 'debit_card';
+type PaymentMethod = 'pix' | 'credit_card';
 
 const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; desc: string; icon: React.ReactNode }[] = [
   { id: 'pix',         label: 'PIX',            desc: 'Aprovação imediata',        icon: <Smartphone size={18} /> },
   { id: 'credit_card', label: 'Cartão de crédito', desc: 'À vista',               icon: <CreditCard size={18} /> },
-  { id: 'debit_card',  label: 'Cartão de débito',  desc: 'Aprovação imediata',    icon: <Wallet size={18} /> },
 ];
 
 function daysLeft(d: string | null) {
@@ -173,7 +172,7 @@ export function SubscriptionPage() {
               <div className="px-5 pt-5 pb-4 text-center border-b border-[#eceee8]">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6BA534]">Mensalidade — 30 dias</p>
                 <p className="mt-1 text-3xl font-black text-[#1f3a0f] tabular-nums">R$ {Number(fee).toFixed(2).replace('.', ',')}</p>
-                <p className="mt-0.5 text-sm text-[#7a8274]">{method === 'debit_card' ? 'Cartão de débito' : 'Cartão de crédito'}</p>
+                <p className="mt-0.5 text-sm text-[#7a8274]">Cartão de crédito</p>
               </div>
               <div className="p-4 flex flex-col gap-4">
                 {cardMessage && (
@@ -193,7 +192,7 @@ export function SubscriptionPage() {
                     publicKey={adminPublicKey}
                     amount={Number(fee)}
                     email={user?.email}
-                    method={method === 'debit_card' ? 'debit_card' : 'credit_card'}
+                    method="credit_card"
                     maxInstallments={1}
                     onSubmit={handleCard}
                   />
@@ -255,7 +254,7 @@ export function SubscriptionPage() {
             'Loja visível para todos os clientes de Floresta - PE',
             'Cardápio digital ilimitado com fotos e categorias',
             'Recebimento de pedidos em tempo real',
-            'Pagamentos online via PIX, crédito e débito',
+            'Pagamentos online via Pix e cartão de crédito',
             'Sistema de promoções e combos',
             'Suporte via WhatsApp',
           ].map((item, i) => (

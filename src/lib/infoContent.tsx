@@ -101,7 +101,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
 
         <SectionTitle>Quais formas de pagamento são aceitas?</SectionTitle>
         <P>
-          Aceitamos PIX, cartão de crédito e cartão de débito, processados com segurança através do
+          Aceitamos Pix e cartão de crédito, processados com segurança através do
           Mercado Pago.
         </P>
 
@@ -248,7 +248,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
         <SectionTitle>O que está incluso</SectionTitle>
         <ul>
           <Li>Página própria do seu estabelecimento dentro do app, com cardápio, fotos, horários e formas de contato.</Li>
-          <Li>Recebimento de pedidos em tempo real, com pagamento online via Pix, crédito ou débito.</Li>
+          <Li>Recebimento de pedidos em tempo real, com pagamento online via Pix ou cartão de crédito.</Li>
           <Li>Link exclusivo da sua loja para compartilhar com seus clientes.</Li>
           <Li>Painel de gestão para controlar produtos, pedidos e disponibilidade.</Li>
         </ul>

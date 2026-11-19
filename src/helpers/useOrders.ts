@@ -25,6 +25,7 @@ export interface Order {
   notes: string;
   created_at: string;
   payment_method?: string;
+  payment_status?: string;
   // campos extras do join (só em useOrderTracking)
   restaurant_name?: string;
   restaurant_phone?: string;

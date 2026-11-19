@@ -594,7 +594,7 @@ export function RestaurantDashboard() {
                       )}
                     </div>
                     <p className="text-xs text-[#777] leading-relaxed">
-                      Para receber pagamentos online (PIX, crédito e débito) diretamente na sua conta,
+                      Para receber pagamentos online (Pix e cartão de crédito) diretamente na sua conta,
                       conecte seu <strong>Access Token de Produção</strong> do Mercado Pago. Sem isso,
                       seu restaurante não poderá receber pedidos com pagamento online.
                     </p>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Minus, Plus, Trash2, ShoppingCart, ArrowLeft, Store,
-  FileText, CreditCard, Smartphone, Landmark,
+  FileText, CreditCard, Smartphone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../components/Button';
@@ -11,12 +11,11 @@ import { useAuth } from '../helpers/useAuth';
 import { createOrder } from '../helpers/useOrders';
 import { supabase } from '../lib/supabase';
 
-type PaymentMethod = 'pix' | 'credit_card' | 'debit_card';
+type PaymentMethod = 'pix' | 'credit_card';
 
 const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; desc: string; icon: React.ReactNode }[] = [
   { id: 'pix',         label: 'PIX',              desc: 'Aprovação imediata',         icon: <Smartphone size={20} /> },
-  { id: 'credit_card', label: 'Cartão de Crédito', desc: 'Até 12x sem juros',          icon: <CreditCard size={20} /> },
-  { id: 'debit_card',  label: 'Cartão de Débito',  desc: 'Débito na hora',             icon: <Landmark size={20} /> },
+  { id: 'credit_card', label: 'Cartão',            desc: 'Crédito à vista ou em até 12x', icon: <CreditCard size={20} /> },
 ];
 
 function formatPrice(p: number) { return `R$ ${Number(p).toFixed(2).replace('.', ',')}`; }
