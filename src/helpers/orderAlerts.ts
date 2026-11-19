@@ -77,7 +77,7 @@ export async function requestBrowserPermission(): Promise<BrowserPermission> {
 /** Mostra a notificação do sistema. No Android, só funciona via service worker. */
 export async function showBrowserNotification(title: string, body: string, tag: string) {
   if (browserPermission() !== 'granted') return;
-  const options: NotificationOptions = { body, tag, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png' };
+  const options: NotificationOptions = { body, tag, icon: '/icons/icon-192.png', badge: '/icons/badge-96.png' };
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
     if (reg) { await reg.showNotification(title, options); return; }

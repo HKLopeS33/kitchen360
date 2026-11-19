@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Download, X, Share, PlusSquare, MoreVertical } from 'lucide-react';
 import { isMobile, useInstallPrompt } from '../helpers/pwaInstall';
+import logo from '../assets/logo-icon.png';
 
 const KEY = 'install-banner-dismissed';
 const HIDE_FOR_MS = 7 * 24 * 60 * 60 * 1000;
@@ -25,7 +26,9 @@ export function InstallBanner() {
   return (
     <div className="rounded-2xl bg-[#2D5016] text-white p-4 shadow-[0_6px_20px_rgba(20,40,10,0.18)] animate-fade-in-up">
       <div className="flex items-center gap-3">
-        <img src="/icons/icon-192.png" alt="" className="w-11 h-11 rounded-xl shrink-0 bg-white" />
+        <span className="w-12 h-12 rounded-2xl bg-white shrink-0 flex items-center justify-center shadow-sm">
+          <img src={logo} alt="Floresta Já" className="w-9 h-9 object-contain" />
+        </span>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm">Instale o Floresta Já</p>
           <p className="text-xs text-white/80">Abra direto da tela inicial e receba avisos dos pedidos.</p>
