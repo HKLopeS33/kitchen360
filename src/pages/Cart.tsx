@@ -64,50 +64,23 @@ export function Cart() {
         paymentMethod,
       });
 
-      // 2. Chama a Edge Function para criar pagamento no Mercado Pago
+      // Cartão: o formulário seguro do Mercado Pago abre na tela de pagamento.
+      if (paymentMethod !== 'pix') {
+        clearCart();
+        navigate(`/pagamento-pendente/${order.id}`, { replace: true });
+        return;
+      }
+
+      // Pix: gera o QR Code (valores vêm do pedido salvo no banco).
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          orderId: order.id,
-          orderNumber: order.order_number,
-          restaurantId: order.restaurant_id,
-          items: order.items,
-          total: totalPrice,
-          paymentMethod,
-          payerEmail: user.email,
-          payerName: user.name,
-        },
+        body: { orderId: order.id, paymentMethod },
       });
-
-      // Log detalhado para diagnóstico
-      console.log('[create-payment] data:', JSON.stringify(data));
-      console.log('[create-payment] error:', JSON.stringify(error));
-
-      if (error) {
-        toast.error(`Erro na função: ${error.message}`);
-        setLoading(false);
+      if (error || data?.error || !data?.pix) {
+        toast.error(data?.error ?? 'Não foi possível gerar o Pix. Tente de novo.');
         return;
       }
-
-      if (!data?.checkoutUrl && !data?.sandboxUrl) {
-        toast.error(`Erro do Mercado Pago: ${data?.error ?? 'Sem URL de checkout'} — ${data?.detail ?? ''}`);
-        setLoading(false);
-        return;
-      }
-
-      // 3. Limpa o carrinho
       clearCart();
-      toast.success(`Pedido #${order.order_number} criado! Abrindo pagamento...`);
-
-      // Abre o checkout do Mercado Pago em uma nova aba.
-      // Importante: para métodos assíncronos (PIX, boleto) o MP NÃO redireciona
-      // automaticamente de volta ao site após o pagamento — o cliente só vê a
-      // confirmação dentro do próprio checkout. Por isso já levamos o cliente
-      // para uma tela de "aguardando pagamento" nesta aba: o pedido só é
-      // enviado ao estabelecimento quando o pagamento é confirmado (webhook),
-      // e assim que isso acontecer o cliente é levado automaticamente para
-      // o acompanhamento do pedido.
-      window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
-      navigate(`/pagamento-pendente/${order.id}`, { replace: true });
+      navigate(`/pagamento-pendente/${order.id}`, { replace: true, state: { pix: data.pix } });
 
     } catch (err: any) {
       toast.error(err.message || 'Erro ao finalizar pedido');
@@ -281,11 +254,13 @@ export function Cart() {
           )}
 
           <Button type="submit" fullWidth loading={loading} size="lg" className="!rounded-full">
-            {loading ? 'Processando...' : `Pagar ${formatPrice(totalPrice)}`}
+            {loading ? 'Processando...' : `Continuar para pagamento · ${formatPrice(totalPrice)}`}
           </Button>
 
           <p className="text-center text-xs text-[#aaa]">
-            Você será redirecionado para o Mercado Pago para concluir o pagamento com segurança.
+            {paymentMethod === 'pix'
+              ? 'O QR Code do Pix aparece na próxima tela, aqui mesmo no app.'
+              : 'Na próxima tela você digita o cartão no formulário seguro do Mercado Pago, sem sair do app.'}
           </p>
         </form>
       </div>

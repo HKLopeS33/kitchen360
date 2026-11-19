@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Leaf, ShieldCheck, Clock, CheckCircle2, AlertTriangle, XCircle, CreditCard, Smartphone, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,6 +7,9 @@ import { useAuth } from '../helpers/useAuth';
 import { useMyRestaurant } from '../helpers/useRestaurants';
 import { useMonthlyFee } from '../helpers/useRestaurants';
 import { Button } from '../components/Button';
+import { PixPayment, type PixData } from '../components/PixPayment';
+import { CardPaymentForm, type CardFormData } from '../components/CardPaymentForm';
+import { cardResultMessage } from '../helpers/cardPayment';
 
 type PaymentMethod = 'pix' | 'credit_card' | 'debit_card';
 
@@ -32,6 +35,59 @@ export function SubscriptionPage() {
   const { fee } = useMonthlyFee();
   const [method, setMethod] = useState<PaymentMethod>('pix');
   const [loading, setLoading] = useState(false);
+  const [pix, setPix] = useState<PixData | null>(null);
+  // Cartão dentro do app (Public Key do admin vem de app_settings).
+  const [cardOpen, setCardOpen] = useState(false);
+  const [adminPublicKey, setAdminPublicKey] = useState<string | null | undefined>(undefined);
+  const [cardMessage, setCardMessage] = useState<{ tone: 'error' | 'info'; text: string } | null>(null);
+  const [brickKey, setBrickKey] = useState(0);
+
+  useEffect(() => {
+    if (!cardOpen || adminPublicKey !== undefined) return;
+    supabase.from('app_settings').select('value').eq('key', 'admin_mp_public_key').maybeSingle()
+      .then(({ data }) => setAdminPublicKey(data?.value?.trim() || null));
+  }, [cardOpen, adminPublicKey]);
+
+  const handleCard = useCallback(async (card: CardFormData) => {
+    if (!restaurant) return;
+    setCardMessage(null);
+    const { data, error } = await supabase.functions.invoke('create-subscription-payment', {
+      body: { restaurantId: restaurant.id, paymentMethod: method, card },
+    });
+    if (error || data?.error || !data?.card) {
+      setCardMessage({ tone: 'error', text: data?.error ?? 'Não foi possível processar o pagamento. Tente de novo.' });
+      setBrickKey(k => k + 1);
+      return;
+    }
+    const r = data.card as { status: string; statusDetail: string };
+    if (r.status === 'approved') {
+      navigate(`/assinatura-status?result=sucesso&rid=${restaurant.id}`, { replace: true });
+      return;
+    }
+    if (r.status === 'in_process' || r.status === 'pending') {
+      setCardMessage({ tone: 'info', text: cardResultMessage(r) });
+      return;
+    }
+    setCardMessage({ tone: 'error', text: cardResultMessage(r) });
+    setBrickKey(k => k + 1);
+  }, [restaurant, method, navigate]);
+
+  // Pix na tela: confere a cada 4s se o webhook já renovou a assinatura.
+  useEffect(() => {
+    if (!pix || !restaurant) return;
+    const t = setInterval(async () => {
+      const { data } = await supabase
+        .from('restaurants')
+        .select('last_subscription_payment_id')
+        .eq('id', restaurant.id)
+        .maybeSingle();
+      if (data?.last_subscription_payment_id === pix.paymentId) {
+        clearInterval(t);
+        navigate(`/assinatura-status?result=sucesso&rid=${restaurant.id}`, { replace: true });
+      }
+    }, 4000);
+    return () => clearInterval(t);
+  }, [pix, restaurant, navigate]);
 
   const status = restaurant?.subscription_status ?? 'trial';
   const isTrial = status === 'trial';
@@ -52,6 +108,12 @@ export function SubscriptionPage() {
 
   const handlePay = async () => {
     if (!restaurant || !user) return;
+    if (method !== 'pix') {
+      setCardMessage(null);
+      setCardOpen(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-subscription-payment', {
@@ -66,11 +128,9 @@ export function SubscriptionPage() {
 
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
-      if (!data?.checkoutUrl) throw new Error('Sem URL de checkout');
-
-      window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
-      toast.success('Redirecionando para o pagamento...');
-      navigate('/meu-restaurante');
+      if (!data?.pix) throw new Error('Não foi possível gerar o Pix');
+      setPix(data.pix);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       toast.error(err.message || 'Erro ao iniciar pagamento');
     } finally {
@@ -92,6 +152,61 @@ export function SubscriptionPage() {
       </header>
 
       <main className="max-w-2xl mx-auto safe-px py-6 space-y-4">
+        {pix && (
+          <div className="space-y-3">
+            <PixPayment
+              pix={pix}
+              title="Mensalidade — 30 dias"
+              subtitle={restaurant?.name}
+              onRenew={handlePay}
+              renewing={loading}
+            />
+            <button onClick={() => setPix(null)} className="w-full h-10 text-sm font-semibold text-[#2D5016]">
+              Escolher outra forma de pagamento
+            </button>
+          </div>
+        )}
+
+        {cardOpen && (
+          <div className="space-y-3">
+            <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(20,40,10,0.08)] overflow-hidden animate-scale-in">
+              <div className="px-5 pt-5 pb-4 text-center border-b border-[#eceee8]">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#6BA534]">Mensalidade — 30 dias</p>
+                <p className="mt-1 text-3xl font-black text-[#1f3a0f] tabular-nums">R$ {Number(fee).toFixed(2).replace('.', ',')}</p>
+                <p className="mt-0.5 text-sm text-[#7a8274]">{method === 'debit_card' ? 'Cartão de débito' : 'Cartão de crédito'}</p>
+              </div>
+              <div className="p-4 flex flex-col gap-4">
+                {cardMessage && (
+                  <div className={`rounded-xl text-sm px-4 py-3 flex gap-2 ${cardMessage.tone === 'error' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-800'}`}>
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5" /> {cardMessage.text}
+                  </div>
+                )}
+                {cardMessage?.tone === 'info' ? null : adminPublicKey === undefined ? (
+                  <div className="py-10 text-center text-sm text-[#7a8274]">Carregando...</div>
+                ) : adminPublicKey === null ? (
+                  <p className="py-6 text-center text-sm text-[#4a5544]">
+                    O pagamento com cartão ainda não foi ativado pelo administrador. Use o Pix.
+                  </p>
+                ) : (
+                  <CardPaymentForm
+                    key={`${method}-${brickKey}`}
+                    publicKey={adminPublicKey}
+                    amount={Number(fee)}
+                    email={user?.email}
+                    method={method === 'debit_card' ? 'debit_card' : 'credit_card'}
+                    maxInstallments={1}
+                    onSubmit={handleCard}
+                  />
+                )}
+              </div>
+            </div>
+            <button onClick={() => { setCardOpen(false); setCardMessage(null); }} className="w-full h-10 text-sm font-semibold text-[#2D5016]">
+              Escolher outra forma de pagamento
+            </button>
+          </div>
+        )}
+
+        {!pix && !cardOpen && (<>
 
         {/* Status atual */}
         <div className={`rounded-2xl border p-5 ${statusInfo.bg} ${statusInfo.border} animate-fade-in-up`}>
@@ -154,7 +269,7 @@ export function SubscriptionPage() {
         {/* Renovar */}
         <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4 animate-fade-in-up">
           <h3 className="font-bold text-[#1a1a1a]">Renovar por 30 dias</h3>
-          <p className="text-sm text-[#777]">Escolha a forma de pagamento e conclua pelo Mercado Pago:</p>
+          <p className="text-sm text-[#777]">Escolha a forma de pagamento. O pagamento é feito aqui mesmo, sem sair do app:</p>
 
           <div className="space-y-2">
             {PAYMENT_OPTIONS.map(opt => (
@@ -189,6 +304,7 @@ export function SubscriptionPage() {
             Pagamento seguro via Mercado Pago. Após confirmação, seu acesso é renovado automaticamente por 30 dias.
           </p>
         </div>
+        </>)}
       </main>
     </div>
   );

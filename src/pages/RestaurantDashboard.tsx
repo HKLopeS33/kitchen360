@@ -52,6 +52,7 @@ export function RestaurantDashboard() {
     open_time: '08:00', close_time: '18:00', image_url: '', is_open_today: false,
     category: 'restaurante' as Category,
     free_shipping: false, promo_text: '', delivery_time_min: 30, delivery_time_max: 50,
+    mp_public_key: '',
   });
   const [showToken, setShowToken] = useState(false);
   // Token do Mercado Pago: só é enviado ao banco, nunca lido de volta.
@@ -75,6 +76,7 @@ export function RestaurantDashboard() {
         promo_text: restaurant.promo_text ?? '',
         delivery_time_min: restaurant.delivery_time_min ?? 30,
         delivery_time_max: restaurant.delivery_time_max ?? 50,
+        mp_public_key: restaurant.mp_public_key ?? '',
       });
     }
   }, [restaurant]);
@@ -146,7 +148,7 @@ export function RestaurantDashboard() {
     if (!restaurant && !acceptedTerms) { toast.error('Você precisa aceitar a política de uso e assinatura para continuar.'); return; }
     setSaving(true);
     try {
-      const payload: any = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, category: form.category, free_shipping: form.free_shipping, promo_text: form.promo_text.trim() || null, delivery_time_min: Number(form.delivery_time_min) || 30, delivery_time_max: Number(form.delivery_time_max) || 50 };
+      const payload: any = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, category: form.category, free_shipping: form.free_shipping, promo_text: form.promo_text.trim() || null, delivery_time_min: Number(form.delivery_time_min) || 30, delivery_time_max: Number(form.delivery_time_max) || 50, mp_public_key: form.mp_public_key.trim() || null };
       if (!restaurant) payload.accepted_terms_at = new Date().toISOString();
       if (restaurant) { await updateRestaurant(payload); await saveMpToken(restaurant.id); toast.success('Dados atualizados!'); }
       else { const created = await createRestaurant(payload); await saveMpToken(created.id); toast.success('Restaurante cadastrado!'); setTab('pedidos'); }
@@ -613,6 +615,17 @@ export function RestaurantDashboard() {
                         </button>
                       </div>
                     </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#333] mb-1">Public Key (Mercado Pago) — para cartão no app</label>
+                      <input
+                        value={form.mp_public_key}
+                        onChange={e => setForm(f => ({ ...f, mp_public_key: e.target.value }))}
+                        autoComplete="off"
+                        placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all font-mono"
+                      />
+                      <p className="mt-1 text-[11px] text-[#999]">Fica na mesma tela de credenciais do Access Token. Sem ela, seus clientes pagam só com Pix.</p>
+                    </div>
                     <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2D5016] hover:underline">
                       <ExternalLink size={13} /> Não tem um token? Crie sua aplicação gratuita no Mercado Pago
@@ -621,8 +634,8 @@ export function RestaurantDashboard() {
                       <li>Crie uma conta gratuita no Mercado Pago (CPF ou CNPJ)</li>
                       <li>Acesse o painel de desenvolvedores e clique em "Criar aplicação"</li>
                       <li>Escolha "Pagamentos online" como modelo de integração</li>
-                      <li>Copie o <strong>Access Token de Produção</strong> (começa com <code>APP_USR-</code>)</li>
-                      <li>Cole aqui no campo acima e salve</li>
+                      <li>Copie o <strong>Access Token</strong> e a <strong>Public Key</strong> de Produção (começam com <code>APP_USR-</code>)</li>
+                      <li>Cole nos campos acima e salve</li>
                     </ol>
                   </div>
 

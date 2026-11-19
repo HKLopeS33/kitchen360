@@ -7,7 +7,8 @@ const statusMap: Record<string, string> = {
   approved:   'pending',
   pending:    'awaiting_payment',
   in_process: 'awaiting_payment',
-  rejected:   'cancelled',
+  // Cartão recusado não cancela: o cliente pode tentar outro cartão ou Pix.
+  rejected:   'awaiting_payment',
   cancelled:  'cancelled',
   refunded:   'cancelled',
   charged_back: 'cancelled',
@@ -167,6 +168,13 @@ Deno.serve(async (req) => {
 
     const newStatus = statusMap[mpStatus] ?? 'awaiting_payment';
 
+    // Pix vencido/cancelado que não é mais o código atual do pedido (o cliente
+    // gerou outro) não cancela o pedido.
+    if (newStatus === 'cancelled' && order.payment_id && String(order.payment_id) !== id) {
+      console.log('Cancelamento de pagamento antigo ignorado', { orderNumber, id });
+      return new Response('ok', { status: 200 });
+    }
+
     if (newStatus === 'pending') {
       if (paid + 0.01 < Number(order.total)) {
         console.error(`Valor pago (${paid}) menor que o pedido (${order.total})`);
@@ -179,9 +187,14 @@ Deno.serve(async (req) => {
       return new Response('ok', { status: 200 });
     }
 
+    // Tentativas que não mudam o pedido (em análise / recusado) só registram o
+    // status, sem trocar qual é o pagamento atual do pedido.
+    const changes = newStatus === 'awaiting_payment'
+      ? { payment_status: mpStatus }
+      : { status: newStatus, payment_status: mpStatus, payment_id: id };
     const { error } = await db
       .from('orders')
-      .update({ status: newStatus, payment_status: mpStatus, payment_id: id })
+      .update(changes)
       .eq('id', order.id);
     if (error) console.error('Supabase update error:', error);
     else console.log('pedido', orderNumber, '→', newStatus);

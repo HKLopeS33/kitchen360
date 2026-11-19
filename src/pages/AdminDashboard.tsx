@@ -38,6 +38,8 @@ export function AdminDashboard() {
   const [showToken, setShowToken] = useState(false);
   const [savingToken, setSavingToken] = useState(false);
   const [tokenConfigured, setTokenConfigured] = useState(false);
+  const [publicKey, setPublicKey] = useState('');
+  const [savingKey, setSavingKey] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -51,7 +53,21 @@ export function AdminDashboard() {
   useEffect(() => {
     supabase.rpc('admin_mp_token_configured')
       .then(({ data }) => setTokenConfigured(data === true));
+    supabase.from('app_settings').select('value').eq('key', 'admin_mp_public_key').maybeSingle()
+      .then(({ data }) => setPublicKey(data?.value ?? ''));
   }, []);
+
+  // Public Key é pública (vai para o formulário de cartão no navegador).
+  async function handleSavePublicKey() {
+    setSavingKey(true);
+    const value = publicKey.trim();
+    const { error } = value
+      ? await supabase.from('app_settings').upsert({ key: 'admin_mp_public_key', value, updated_at: new Date().toISOString() })
+      : await supabase.from('app_settings').delete().eq('key', 'admin_mp_public_key');
+    setSavingKey(false);
+    if (error) toast.error(error.message);
+    else toast.success(value ? 'Public Key salva! Cartão ativado nas mensalidades.' : 'Public Key removida.');
+  }
 
   async function handleSaveToken() {
     if (!adminToken.trim()) { toast.error('Informe o Access Token'); return; }
@@ -200,6 +216,23 @@ export function AdminDashboard() {
           ) : (
             <p className="text-[11px] text-orange-600">Nenhum token configurado — mensalidades online desativadas.</p>
           )}
+          <div className="pt-2 border-t border-gray-100 space-y-2">
+            <p className="text-xs text-[#999] leading-relaxed">
+              <strong>Public Key</strong> da mesma conta — ativa o pagamento com cartão dentro do app.
+            </p>
+            <div className="flex gap-2">
+              <input
+                value={publicKey}
+                onChange={e => setPublicKey(e.target.value)}
+                placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-mono outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
+              />
+              <button onClick={handleSavePublicKey} disabled={savingKey}
+                className="flex items-center gap-1 text-xs font-bold px-3 py-2 rounded-xl bg-[#2D5016] text-white hover:bg-[#3d6b1e] disabled:opacity-50 transition-colors shrink-0">
+                <Check size={13} /> Salvar
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Lista de estabelecimentos */}
