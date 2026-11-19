@@ -11,9 +11,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Cardápio Fitness — Floresta PE',
-        short_name: 'Cardápio Fitness',
-        description: 'Peça comida dos melhores restaurantes de Floresta - PE, com pagamento online via Pix, crédito ou débito.',
+        id: '/',
+        name: 'Floresta Já — Tudo da sua cidade',
+        short_name: 'Floresta Já',
+        description: 'Peça dos estabelecimentos de Floresta - PE, com pagamento online via Pix ou cartão de crédito.',
         theme_color: '#2D5016',
         background_color: '#f7f5f0',
         display: 'standalone',
@@ -30,6 +31,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         navigateFallbackDenylist: [/^\/functions\//],
+        // Recebe as notificações push com o app fechado.
+        importScripts: ['/push-sw.js'],
       },
     }),
   ],

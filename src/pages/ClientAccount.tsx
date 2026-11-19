@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Leaf, MapPin, User, LogOut, Mail, Phone, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
+import { PhoneAppCard } from '../components/PhoneAppCard';
 import { Button } from '../components/Button';
 
 // Na carga direta da página o usuário chega depois do primeiro render; o key remonta o
@@ -121,6 +122,8 @@ function ClientAccountForm() {
           </div>
           <Button type="submit" fullWidth loading={loading}>Salvar alterações</Button>
         </form>
+
+        {user && <PhoneAppCard userId={user.id} audience={user.role === 'restaurant_owner' ? 'restaurant' : 'client'} />}
 
         <form onSubmit={handlePasswordSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4 animate-fade-in-up">
           <h2 className="font-bold text-[#1a1a1a] text-sm flex items-center gap-1.5">

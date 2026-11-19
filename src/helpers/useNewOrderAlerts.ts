@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Order } from './useOrders';
-import { loadAlertPrefs, playOrderChime, saveAlertPrefs, showBrowserNotification, type AlertPrefs } from './orderAlerts';
+import { loadAlertPrefs, playOrderChime, saveAlertPrefs, type AlertPrefs } from './orderAlerts';
 
 export type NewOrderAlert = Pick<Order, 'id' | 'order_number' | 'client_name' | 'total'>;
 
 const RING_EVERY_MS = 6000;
 const RING_FOR_MS = 3 * 60 * 1000;
 
-function brl(v: number) { return `R$ ${Number(v).toFixed(2).replace('.', ',')}`; }
 
 /**
  * Avisa o estabelecimento quando chega um pedido pago (status "pending"):
@@ -28,11 +27,7 @@ export function useNewOrderAlerts(restaurantId: string | null) {
     seen.current.add(o.id);
     ringStart.current = Date.now();
     setAlerts(prev => [o, ...prev]);
-    void showBrowserNotification(
-      `Novo pedido #${o.order_number}`,
-      `${o.client_name || 'Cliente'} · ${brl(o.total)}`,
-      `order-${o.id}`,
-    );
+    // A notificação do sistema vem pelo push (inclusive com o app fechado).
   }, []);
 
   // Pedido saiu de "aguardando aceite" (aceito/cancelado): para de avisar.

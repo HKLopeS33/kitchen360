@@ -12,6 +12,7 @@ import { Button } from '../components/Button';
 import { NotificationBell } from '../components/NotificationBell';
 import { OwnerMenu } from '../components/OwnerMenu';
 import { AlertSettings } from '../components/OrderAlerts';
+import { PhoneAppCard } from '../components/PhoneAppCard';
 import { loadAlertPrefs, saveAlertPrefs, type AlertPrefs } from '../helpers/orderAlerts';
 
 const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all font-mono';
@@ -199,6 +200,8 @@ export function RestaurantSettings() {
             </Section>
 
             {/* ── Alertas ── */}
+            <PhoneAppCard userId={user.id} audience="restaurant" />
+
             <AlertSettings prefs={prefs} setPrefs={setPrefs} />
 
             {/* ── Loja e conta ── */}

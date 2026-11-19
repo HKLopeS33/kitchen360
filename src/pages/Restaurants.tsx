@@ -10,6 +10,7 @@ import { Footer } from '../components/Footer';
 import { PromotionsCarousel } from '../components/PromotionsCarousel';
 import { NotificationBell } from '../components/NotificationBell';
 import { OwnerMenu } from '../components/OwnerMenu';
+import { InstallBanner } from '../components/InstallBanner';
 
 type QuickFilter = 'todos' | 'aberto' | 'frete' | 'promo';
 
@@ -162,6 +163,7 @@ export function Restaurants() {
       </header>
 
       <main className={`${CONTAINER} pt-5 pb-10 flex flex-col gap-6`}>
+        <InstallBanner />
         {/* Título + busca */}
         <section className="flex flex-col gap-4 animate-fade-in-up">
           <div>

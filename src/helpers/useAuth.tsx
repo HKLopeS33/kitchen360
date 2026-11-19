@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import { supabase, type Profile, type UserRole } from '../lib/supabase';
+import { detachPushFromUser, syncPushSubscription } from './webPush';
 
 interface AuthContextType {
   user: Profile | null;
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    await detachPushFromUser();
     await supabase.auth.signOut();
   };
 
@@ -102,6 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw new Error(error.message);
     if (mounted.current) setUser(updated as Profile);
   };
+
+  // Liga as notificações push deste aparelho a quem está logado.
+  const userId = user?.id;
+  useEffect(() => { if (userId) void syncPushSubscription(); }, [userId]);
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, updateProfile, updatePassword, isLoading }}>

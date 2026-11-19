@@ -1,10 +1,6 @@
-import { useEffect, useState } from 'react';
-import { BellRing, Volume2, VolumeX, Bell, BellOff, ChevronRight } from 'lucide-react';
+import { BellRing, Volume2, VolumeX, ChevronRight } from 'lucide-react';
 import type { NewOrderAlert } from '../helpers/useNewOrderAlerts';
-import {
-  browserPermission, playOrderChime, requestBrowserPermission, unlockAudio,
-  type AlertPrefs, type BrowserPermission,
-} from '../helpers/orderAlerts';
+import { playOrderChime, unlockAudio, type AlertPrefs } from '../helpers/orderAlerts';
 
 function brl(v: number) { return `R$ ${Number(v).toFixed(2).replace('.', ',')}`; }
 
@@ -41,20 +37,6 @@ export function NewOrderBanner({ alerts, onView }: { alerts: NewOrderAlert[]; on
 
 /** Cartão de configuração dos alertas (aba Pedidos). */
 export function AlertSettings({ prefs, setPrefs }: { prefs: AlertPrefs; setPrefs: (p: AlertPrefs) => void }) {
-  const [perm, setPerm] = useState<BrowserPermission>(browserPermission);
-
-  // A permissão pode mudar nas configurações do navegador.
-  useEffect(() => {
-    const onFocus = () => setPerm(browserPermission());
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, []);
-
-  const enableBrowser = async () => {
-    unlockAudio();
-    setPerm(await requestBrowserPermission());
-  };
-
   const testSound = () => { unlockAudio(); playOrderChime(); };
 
   return (
@@ -64,14 +46,14 @@ export function AlertSettings({ prefs, setPrefs }: { prefs: AlertPrefs; setPrefs
           <p className="font-bold text-sm text-[#1a1a1a] flex items-center gap-2">
             <BellRing size={16} className="text-[#6BA534]" /> Alertas de pedido novo
           </p>
-          <p className="text-xs text-[#888] mt-0.5">Mantenha esta página aberta para ouvir a campainha.</p>
+          <p className="text-xs text-[#888] mt-0.5">Campainha com o painel aberto. Com o app fechado, use as notificações no celular.</p>
         </div>
         <button onClick={testSound} className="shrink-0 text-xs font-semibold text-[#2D5016] hover:underline">
           Testar som
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2">
         <button
           onClick={() => { unlockAudio(); setPrefs({ ...prefs, sound: !prefs.sound }); }}
           className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
@@ -88,25 +70,6 @@ export function AlertSettings({ prefs, setPrefs }: { prefs: AlertPrefs; setPrefs
           </span>
         </button>
 
-        <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 ${
-          perm === 'granted' ? 'border-[#cfe3bd] bg-[#f3f9ec]' : 'border-gray-200 bg-white'
-        }`}>
-          {perm === 'granted' ? <Bell size={18} className="text-[#2D5016]" /> : <BellOff size={18} className="text-[#999]" />}
-          <span className="flex-1 min-w-0">
-            <span className="block text-sm font-semibold text-[#1a1a1a]">Notificação no aparelho</span>
-            <span className="block text-[11px] text-[#888]">
-              {perm === 'granted' && 'Ativada: aparece mesmo em outra aba'}
-              {perm === 'default' && 'Avisa mesmo com outra aba aberta'}
-              {perm === 'denied' && 'Bloqueada: libere no cadeado da barra de endereço'}
-              {perm === 'unsupported' && 'Este navegador não permite'}
-            </span>
-          </span>
-          {perm === 'default' && (
-            <button onClick={enableBrowser} className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-[#2D5016] text-white">
-              Ativar
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );
