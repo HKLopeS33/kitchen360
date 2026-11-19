@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, type MenuItem } from '../lib/supabase';
 
 export interface Promotion {
   id: string;
@@ -11,6 +11,7 @@ export interface Promotion {
   original_price: number | null;
   promo_price: number | null;
   image_url: string | null;
+  menu_item_id: string | null;
   starts_at: string;
   ends_at: string | null;
   is_active: boolean;
@@ -47,6 +48,36 @@ export function useActivePromotions() {
 
   useEffect(() => { fetch(); }, [fetch]);
   return { promotions, isLoading, refetch: fetch };
+}
+
+/** A promoção está valendo agora (ativa e dentro do prazo)? */
+export function isPromoLive(p: Pick<Promotion, 'is_active' | 'starts_at' | 'ends_at'>, now = Date.now()) {
+  if (!p.is_active) return false;
+  if (p.starts_at && new Date(p.starts_at).getTime() > now) return false;
+  if (p.ends_at && new Date(p.ends_at).getTime() <= now) return false;
+  return true;
+}
+
+/** Aplica a promoção ao item: preço promocional + preço original guardado. */
+export function applyPromo(item: MenuItem, promos: Promotion[]): MenuItem {
+  const best = promos
+    .filter(p => p.menu_item_id === item.id && isPromoLive(p) && Number(p.promo_price) > 0 && Number(p.promo_price) < Number(item.price))
+    .sort((a, b) => Number(a.promo_price) - Number(b.promo_price))[0];
+  if (!best) return item;
+  return { ...item, price: Number(best.promo_price), original_price: Number(item.price), promo_badge: best.badge };
+}
+
+/** Promoções ativas de um estabelecimento (cardápio do cliente). */
+export function useRestaurantPromotions(restaurantId: string | null) {
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  useEffect(() => {
+    if (!restaurantId) return;
+    let cancelled = false;
+    supabase.from('promotions').select('*').eq('restaurant_id', restaurantId).eq('is_active', true)
+      .then(({ data }) => { if (!cancelled) setPromotions((data ?? []).filter(p => isPromoLive(p))); });
+    return () => { cancelled = true; };
+  }, [restaurantId]);
+  return promotions;
 }
 
 // Promoções do restaurante do dono logado

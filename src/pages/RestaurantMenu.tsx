@@ -1,11 +1,12 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, MapPin, Phone, ShoppingCart, Plus, Minus, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Phone, ShoppingCart, Plus, Minus, AlertCircle, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, type Restaurant, type MenuItem } from '../lib/supabase';
 import { useCart } from '../helpers/useCart';
 import { useAuth } from '../helpers/useAuth';
 import { useMenuItems } from '../helpers/useMenuItems';
+import { useRestaurantPromotions, applyPromo } from '../helpers/usePromotions';
 import { FloatingCart } from '../components/FloatingCart';
 
 function formatTime(t: string) { return t?.slice(0, 5) ?? '--:--'; }
@@ -25,7 +26,12 @@ export function RestaurantMenu() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loadingRestaurant, setLoadingRestaurant] = useState(true);
 
-  const { items: menuItems, isLoading: loadingMenu } = useMenuItems(id ?? null);
+  const { items: rawMenuItems, isLoading: loadingMenu } = useMenuItems(id ?? null);
+  const promotions = useRestaurantPromotions(id ?? null);
+  // Itens já com o preço promocional aplicado (o banco cobra o mesmo valor).
+  const menuItems = rawMenuItems.map(i => applyPromo(i, promotions));
+  // Promoções sem item ligado (combos, avisos) aparecem como destaque no topo.
+  const generalPromos = promotions.filter(p => !p.menu_item_id);
   const { items: cartItems, restaurantId, addItem, updateQty, totalItems, totalPrice } = useCart();
   const { user } = useAuth();
   const isOwner = user?.role === 'restaurant_owner';
@@ -75,8 +81,14 @@ export function RestaurantMenu() {
     );
   }
 
-  const grouped = groupByCategory(menuItems.filter(i => i.available));
-  const categories = Object.keys(grouped).sort();
+  const available = menuItems.filter(i => i.available);
+  const grouped = groupByCategory(available);
+  const onSale = available.filter(i => i.original_price);
+  const categories = [
+    ...(onSale.length ? ['__promo'] : []),
+    ...Object.keys(grouped).sort(),
+  ];
+  if (onSale.length) grouped.__promo = onSale;
 
   return (
     <div className="min-h-screen bg-[#f7f5f0] pb-32">
@@ -131,6 +143,27 @@ export function RestaurantMenu() {
           </div>
         )}
 
+        {generalPromos.length > 0 && (
+          <div className="flex gap-3 overflow-x-auto pb-2 mb-5 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+            {generalPromos.map(p => (
+              <div key={p.id} className="shrink-0 w-64 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 text-white p-4">
+                <div className="flex items-center gap-2">
+                  <Tag size={14} />
+                  {p.badge && <span className="text-xs font-black uppercase">{p.badge}</span>}
+                </div>
+                <p className="mt-1 font-bold leading-tight">{p.title}</p>
+                {p.description && <p className="mt-1 text-xs text-white/85 line-clamp-2">{p.description}</p>}
+                {p.promo_price && (
+                  <p className="mt-2 text-sm">
+                    {p.original_price && <span className="line-through text-white/70 mr-1.5">{formatPrice(p.original_price)}</span>}
+                    <span className="font-black">{formatPrice(p.promo_price)}</span>
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {loadingMenu ? (
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
@@ -149,20 +182,38 @@ export function RestaurantMenu() {
           <div className="space-y-6">
             {categories.map((cat, ci) => (
               <div key={cat} className="animate-fade-in-up" style={{ animationDelay: `${ci * 60}ms` }}>
-                <h2 className="text-xs font-black uppercase tracking-widest text-[#6BA534] mb-3 px-1">{cat}</h2>
+                {cat === '__promo' ? (
+                  <h2 className="text-xs font-black uppercase tracking-widest text-orange-500 mb-3 px-1 flex items-center gap-1.5">
+                    <Tag size={13} /> Em promoção
+                  </h2>
+                ) : (
+                  <h2 className="text-xs font-black uppercase tracking-widest text-[#6BA534] mb-3 px-1">{cat}</h2>
+                )}
                 <div className="space-y-3">
                   {grouped[cat].map(item => {
                     const qty = getQty(item.id);
                     return (
-                      <div key={item.id} className="bg-white rounded-2xl shadow-sm p-4 flex gap-4 card-hover">
+                      <div key={`${cat}-${item.id}`} className="bg-white rounded-2xl shadow-sm p-4 flex gap-4 card-hover">
                         {item.image_url && (
                           <img src={item.image_url} alt={item.name} className="w-20 h-20 object-cover rounded-xl shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-[#1a1a1a]">{item.name}</h3>
+                          <div className="flex items-start gap-2">
+                            <h3 className="font-bold text-[#1a1a1a] flex-1 min-w-0">{item.name}</h3>
+                            {item.original_price && (
+                              <span className="shrink-0 text-[10px] font-black uppercase bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">
+                                {item.promo_badge || `${Math.round((1 - item.price / item.original_price) * 100)}% OFF`}
+                              </span>
+                            )}
+                          </div>
                           {item.description && <p className="text-xs text-[#888] mt-0.5 line-clamp-2">{item.description}</p>}
                           <div className="flex items-center justify-between mt-3">
-                            <span className="font-black text-[#2D5016]">{formatPrice(item.price)}</span>
+                            <span className="flex items-baseline gap-1.5">
+                              {item.original_price && (
+                                <span className="text-xs text-[#aaa] line-through">{formatPrice(item.original_price)}</span>
+                              )}
+                              <span className={`font-black ${item.original_price ? 'text-orange-500' : 'text-[#2D5016]'}`}>{formatPrice(item.price)}</span>
+                            </span>
                             {isOwner ? (
                               <span className="text-xs text-[#bbb] italic">Conta de estabelecimento</span>
                             ) : qty === 0 ? (

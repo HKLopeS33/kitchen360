@@ -31,6 +31,9 @@ export interface MenuItem {
   image_url: string | null;
   available: boolean;
   created_at: string;
+  // Preenchidos no app quando o item está em promoção (não existem na tabela).
+  original_price?: number;
+  promo_badge?: string | null;
 }
 
 export interface Restaurant {

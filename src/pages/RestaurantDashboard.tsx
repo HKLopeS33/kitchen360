@@ -4,7 +4,7 @@ import {
   Leaf, Clock, MapPin, Phone, Store, ToggleLeft, ToggleRight,
   LogOut, Eye, Plus, Trash2, Pencil, X, Check,
   Package, UtensilsCrossed, Settings, Wallet, ExternalLink, EyeOff, CheckCircle2, AlertCircle,
-  Share2, Copy, ShieldCheck, Tag, ToggleLeft as Toggle, Calendar, ChevronRight,
+  Share2, Copy, ShieldCheck, Tag, Calendar, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
@@ -40,8 +40,8 @@ export function RestaurantDashboard() {
 
   // Adia a busca do cardápio até a aba "Cardápio" ser aberta — evita atraso na exibição inicial (Pedidos)
   const [menuLoaded, setMenuLoaded] = useState(false);
-  useEffect(() => { if (tab === 'cardapio') setMenuLoaded(true); }, [tab]);
-  const { promotions, create: createPromo, toggle: togglePromo, remove: removePromo } = useMyPromotions(restaurant?.id ?? null);
+  useEffect(() => { if (tab === 'cardapio' || tab === 'promocoes') setMenuLoaded(true); }, [tab]);
+  const { promotions, create: createPromo, update: updatePromo, toggle: togglePromo, remove: removePromo } = useMyPromotions(restaurant?.id ?? null);
   const { items: menuItems, isLoading: loadingMenu, createItem, updateItem, deleteItem } = useMenuItems(menuLoaded ? (restaurant?.id ?? null) : null);
   const [toggling, setToggling] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -514,7 +514,9 @@ export function RestaurantDashboard() {
               <PromotionsTab
                 restaurantId={restaurant.id}
                 promotions={promotions}
+                menuItems={menuItems}
                 onCreate={createPromo}
+                onUpdate={updatePromo}
                 onToggle={togglePromo}
                 onRemove={removePromo}
               />
@@ -654,44 +656,133 @@ export function RestaurantDashboard() {
 // Sub-componente: aba de Promoções
 // ─────────────────────────────────────────────────────────────────────────────
 
-const EMPTY_PROMO = {
-  title: '', description: '', type: 'promo' as Promotion['type'],
-  badge: '', original_price: '', promo_price: '', ends_at: '',
+type PromoForm = {
+  menu_item_id: string;
+  title: string; description: string; type: Promotion['type'];
+  badge: string; original_price: string; promo_price: string; discount: string; ends_at: string;
 };
 
-function PromotionsTab({ restaurantId, promotions, onCreate, onToggle, onRemove }: {
+const EMPTY_PROMO: PromoForm = {
+  menu_item_id: '', title: '', description: '', type: 'promo',
+  badge: '', original_price: '', promo_price: '', discount: '', ends_at: '',
+};
+
+const brl = (n: number) => `R$ ${Number(n).toFixed(2).replace('.', ',')}`;
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// "Válida até" é o fim do dia escolhido, no horário de Brasília.
+const endOfDayBrasilia = (date: string) => new Date(`${date}T23:59:59-03:00`).toISOString();
+const toDateInput = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) : '';
+
+function promoStatus(p: Promotion): { label: string; cls: string } {
+  if (!p.is_active) return { label: 'Pausada', cls: 'bg-gray-100 text-[#888]' };
+  if (p.ends_at && new Date(p.ends_at).getTime() <= Date.now()) return { label: 'Encerrada', cls: 'bg-red-50 text-red-500' };
+  return { label: 'Ativa', cls: 'bg-[#e8f5e0] text-[#2D5016]' };
+}
+
+function PromotionsTab({ restaurantId, promotions, menuItems, onCreate, onUpdate, onToggle, onRemove }: {
   restaurantId: string;
   promotions: Promotion[];
+  menuItems: MenuItem[];
   onCreate: (v: any) => Promise<any>;
+  onUpdate: (id: string, v: Partial<Promotion>) => Promise<any>;
   onToggle: (id: string, active: boolean) => Promise<any>;
   onRemove: (id: string) => Promise<void>;
 }) {
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(EMPTY_PROMO);
+  // null = fechado · 'new' = criando · id = editando
+  const [editing, setEditing] = useState<string | null>(null);
+  const [form, setForm] = useState<PromoForm>(EMPTY_PROMO);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const linkedItem = menuItems.find(i => i.id === form.menu_item_id) ?? null;
+  const basePrice = linkedItem ? Number(linkedItem.price) : Number(form.original_price) || 0;
+  const promoNum = Number(form.promo_price) || 0;
+  const autoBadge = basePrice > 0 && promoNum > 0 && promoNum < basePrice
+    ? `${Math.round((1 - promoNum / basePrice) * 100)}% OFF` : '';
+
+  const openNew = () => { setForm(EMPTY_PROMO); setEditing('new'); };
+  const openEdit = (p: Promotion) => {
+    const item = menuItems.find(i => i.id === p.menu_item_id);
+    const base = item ? Number(item.price) : Number(p.original_price) || 0;
+    setForm({
+      menu_item_id: item ? item.id : '',
+      title: p.title,
+      description: p.description ?? '',
+      type: p.type,
+      badge: p.badge ?? '',
+      original_price: p.original_price != null ? String(p.original_price) : '',
+      promo_price: p.promo_price != null ? String(p.promo_price) : '',
+      discount: base > 0 && p.promo_price ? String(Math.round((1 - Number(p.promo_price) / base) * 100)) : '',
+      ends_at: toDateInput(p.ends_at),
+    });
+    setEditing(p.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const close = () => { setEditing(null); setForm(EMPTY_PROMO); };
+
+  const pickItem = (id: string) => {
+    const item = menuItems.find(i => i.id === id);
+    setForm(f => {
+      const next = { ...f, menu_item_id: id };
+      if (!item) return next;
+      const base = Number(item.price);
+      // Mantém o % de desconto já digitado ao trocar de item.
+      const pct = Number(f.discount);
+      return {
+        ...next,
+        title: f.title.trim() && f.title !== menuItems.find(i => i.id === f.menu_item_id)?.name ? f.title : item.name,
+        original_price: String(base),
+        promo_price: pct > 0 && pct < 100 ? String(round2(base * (1 - pct / 100))) : f.promo_price,
+      };
+    });
+  };
+
+  const setDiscount = (v: string) => {
+    const pct = Number(v);
+    setForm(f => ({
+      ...f, discount: v,
+      promo_price: basePrice > 0 && pct > 0 && pct < 100 ? String(round2(basePrice * (1 - pct / 100))) : f.promo_price,
+    }));
+  };
+  const setPromoPrice = (v: string) => {
+    const price = Number(v);
+    setForm(f => ({
+      ...f, promo_price: v,
+      discount: basePrice > 0 && price > 0 && price < basePrice ? String(Math.round((1 - price / basePrice) * 100)) : '',
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title.trim()) { toast.error('Informe o título da promoção'); return; }
+    const title = form.title.trim() || linkedItem?.name || '';
+    if (!title) { toast.error('Informe o título da promoção'); return; }
+    if (linkedItem && !(promoNum > 0 && promoNum < Number(linkedItem.price))) {
+      toast.error(`O preço promocional precisa ser menor que ${brl(Number(linkedItem.price))}.`);
+      return;
+    }
+    const values = {
+      title,
+      description: form.description.trim() || null,
+      type: form.type,
+      badge: form.badge.trim() || autoBadge || null,
+      menu_item_id: linkedItem?.id ?? null,
+      original_price: linkedItem ? Number(linkedItem.price) : (form.original_price ? Number(form.original_price) : null),
+      promo_price: form.promo_price ? round2(Number(form.promo_price)) : null,
+      image_url: linkedItem?.image_url ?? null,
+      ends_at: form.ends_at ? endOfDayBrasilia(form.ends_at) : null,
+    };
     setSaving(true);
     try {
-      await onCreate({
-        restaurant_id: restaurantId,
-        title: form.title.trim(),
-        description: form.description.trim() || null,
-        type: form.type,
-        badge: form.badge.trim() || null,
-        original_price: form.original_price ? Number(form.original_price) : null,
-        promo_price: form.promo_price ? Number(form.promo_price) : null,
-        image_url: null,
-        starts_at: new Date().toISOString(),
-        ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
-        is_active: true,
-      });
-      toast.success('Promoção criada!');
-      setShowForm(false);
-      setForm(EMPTY_PROMO);
+      if (editing && editing !== 'new') {
+        await onUpdate(editing, values);
+        toast.success('Promoção atualizada!');
+      } else {
+        await onCreate({ ...values, restaurant_id: restaurantId, starts_at: new Date().toISOString(), is_active: true });
+        toast.success(linkedItem ? `Promoção publicada! ${linkedItem.name} já aparece com o novo preço.` : 'Promoção publicada!');
+      }
+      close();
     } catch (err: any) { toast.error(err.message); }
     finally { setSaving(false); }
   };
@@ -699,12 +790,23 @@ function PromotionsTab({ restaurantId, promotions, onCreate, onToggle, onRemove 
   const handleRemove = async (id: string) => {
     if (!confirm('Remover esta promoção?')) return;
     setBusyId(id);
-    try { await onRemove(id); toast.success('Promoção removida.'); }
+    try { await onRemove(id); toast.success('Promoção removida.'); if (editing === id) close(); }
     catch (err: any) { toast.error(err.message); }
     finally { setBusyId(null); }
   };
 
+  const handleToggle = async (p: Promotion) => {
+    setBusyId(p.id);
+    try {
+      await onToggle(p.id, !p.is_active);
+      toast.success(p.is_active ? 'Promoção pausada.' : 'Promoção ativada!');
+    } catch (err: any) { toast.error(err.message); }
+    finally { setBusyId(null); }
+  };
+
   const TYPE_LABEL: Record<string, string> = { promo: 'Promoção', combo: 'Combo', desconto: 'Desconto' };
+  const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all';
+  const availableItems = menuItems.filter(i => i.available || i.id === form.menu_item_id);
 
   return (
     <div className="space-y-4">
@@ -713,123 +815,184 @@ function PromotionsTab({ restaurantId, promotions, onCreate, onToggle, onRemove 
           <Tag size={18} className="text-[#6BA534]" /> Promoções
           <span className="text-xs font-normal text-[#aaa]">({promotions.length})</span>
         </h2>
-        <button
-          onClick={() => setShowForm(s => !s)}
-          className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#2D5016] hover:bg-[#3d6b1e] px-3 py-2 rounded-xl transition-colors"
-        >
-          <Plus size={15} /> Nova promoção
-        </button>
+        {editing === null && (
+          <button
+            onClick={openNew}
+            className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#2D5016] hover:bg-[#3d6b1e] px-3 py-2 rounded-xl transition-colors"
+          >
+            <Plus size={15} /> Nova promoção
+          </button>
+        )}
       </div>
 
-      {/* Formulário de criação */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4 border border-[#e8f5e0]">
-          <h3 className="font-bold text-sm text-[#2D5016]">Nova promoção / combo</h3>
+      {/* Formulário (criar / editar) */}
+      {editing !== null && (
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4 border border-[#e8f5e0] animate-scale-in">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-sm text-[#2D5016]">{editing === 'new' ? 'Nova promoção' : 'Editar promoção'}</h3>
+            <button type="button" onClick={close} aria-label="Fechar" className="w-8 h-8 rounded-full flex items-center justify-center text-[#999] hover:bg-gray-100">
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Item do cardápio */}
+          <div>
+            <label className="text-xs font-semibold text-[#555] mb-1 block">Item do cardápio em promoção</label>
+            <select value={form.menu_item_id} onChange={e => pickItem(e.target.value)} className={inputCls}>
+              <option value="">Nenhum: só divulgação (combo, aviso…)</option>
+              {availableItems.map(i => (
+                <option key={i.id} value={i.id}>{i.name} — {brl(Number(i.price))}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-[#999]">
+              {linkedItem
+                ? 'Enquanto a promoção estiver ativa, o item aparece no cardápio com o novo preço e o cliente paga esse valor.'
+                : 'Sem item, a promoção só aparece como destaque e não muda nenhum preço.'}
+            </p>
+          </div>
+
+          {/* Preço */}
+          {linkedItem ? (
+            <div className="rounded-xl bg-[#f7faf4] border border-[#e8f5e0] p-3 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#777]">Preço normal</span>
+                <span className="font-bold text-[#1a1a1a]">{brl(Number(linkedItem.price))}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-[#555] mb-1 block">Desconto (%)</label>
+                  <input type="number" inputMode="numeric" min="1" max="99" value={form.discount}
+                    onChange={e => setDiscount(e.target.value)} placeholder="Ex: 20" className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-[#555] mb-1 block">Preço promocional (R$) *</label>
+                  <input type="number" inputMode="decimal" step="0.01" value={form.promo_price}
+                    onChange={e => setPromoPrice(e.target.value)} placeholder="Ex: 19.90" className={inputCls} />
+                </div>
+              </div>
+              {autoBadge && (
+                <p className="text-xs text-[#2D5016]">
+                  Cliente vê <span className="line-through text-[#aaa]">{brl(basePrice)}</span>{' '}
+                  <strong className="text-orange-500">{brl(promoNum)}</strong> · economia de {brl(basePrice - promoNum)}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-[#555] mb-1 block">Preço original (R$)</label>
+                <input type="number" inputMode="decimal" step="0.01" value={form.original_price}
+                  onChange={e => setForm(f => ({ ...f, original_price: e.target.value }))} placeholder="Ex: 25.00" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#555] mb-1 block">Preço promocional (R$)</label>
+                <input type="number" inputMode="decimal" step="0.01" value={form.promo_price}
+                  onChange={e => setForm(f => ({ ...f, promo_price: e.target.value }))} placeholder="Ex: 19.90" className={inputCls} />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-[#555] mb-1 block">Título *</label>
+              <label className="text-xs font-semibold text-[#555] mb-1 block">Título {linkedItem ? '' : '*'}</label>
               <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="Ex: Combo do dia, 20% OFF no almoço..."
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
+                placeholder={linkedItem ? linkedItem.name : 'Ex: Combo do dia, 2 por 1 no almoço...'} className={inputCls} />
             </div>
             <div>
               <label className="text-xs font-semibold text-[#555] mb-1 block">Tipo</label>
-              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as any }))}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all">
+              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as Promotion['type'] }))} className={inputCls}>
                 <option value="promo">Promoção</option>
                 <option value="combo">Combo</option>
                 <option value="desconto">Desconto</option>
               </select>
             </div>
             <div>
-              <label className="text-xs font-semibold text-[#555] mb-1 block">Destaque (badge)</label>
+              <label className="text-xs font-semibold text-[#555] mb-1 block">Selo</label>
               <input value={form.badge} onChange={e => setForm(f => ({ ...f, badge: e.target.value }))}
-                placeholder="Ex: 20% OFF, COMBO"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all" />
+                placeholder={autoBadge || 'Ex: 20% OFF, COMBO'} className={inputCls} />
             </div>
-            <div>
-              <label className="text-xs font-semibold text-[#555] mb-1 block">Preço original (R$)</label>
-              <input type="number" step="0.01" value={form.original_price} onChange={e => setForm(f => ({ ...f, original_price: e.target.value }))}
-                placeholder="Ex: 25.00"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-[#555] mb-1 block">Preço promocional (R$)</label>
-              <input type="number" step="0.01" value={form.promo_price} onChange={e => setForm(f => ({ ...f, promo_price: e.target.value }))}
-                placeholder="Ex: 19.90"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-[#555] mb-1 block flex items-center gap-1"><Calendar size={11} /> Válida até</label>
-              <input type="date" value={form.ends_at} onChange={e => setForm(f => ({ ...f, ends_at: e.target.value }))}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] transition-all" />
+            <div className="col-span-2 sm:col-span-1">
+              <label className="text-xs font-semibold text-[#555] mb-1 flex items-center gap-1"><Calendar size={11} /> Válida até (opcional)</label>
+              <input type="date" value={form.ends_at} onChange={e => setForm(f => ({ ...f, ends_at: e.target.value }))} className={inputCls} />
             </div>
             <div className="col-span-2">
               <label className="text-xs font-semibold text-[#555] mb-1 block">Descrição</label>
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Descreva os itens incluídos, restrições..."
-                rows={2}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#2D5016] resize-none transition-all" />
+                placeholder="Itens incluídos, regras, horários..." rows={2} className={`${inputCls} resize-none`} />
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button type="submit" loading={saving} size="sm">Publicar promoção</Button>
-            <button type="button" onClick={() => setShowForm(false)}
-              className="px-4 py-2 text-sm text-[#777] hover:text-[#333] transition-colors">Cancelar</button>
+            <Button type="submit" loading={saving} size="sm">{editing === 'new' ? 'Publicar promoção' : 'Salvar alterações'}</Button>
+            <button type="button" onClick={close} className="px-4 py-2 text-sm text-[#777] hover:text-[#333] transition-colors">Cancelar</button>
           </div>
         </form>
       )}
 
-      {/* Lista de promoções */}
-      {promotions.length === 0 && !showForm ? (
+      {/* Lista */}
+      {promotions.length === 0 && editing === null ? (
         <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
           <Tag size={32} className="mx-auto text-[#ddd] mb-3" />
           <p className="text-sm text-[#bbb]">Nenhuma promoção criada ainda.</p>
-          <p className="text-xs text-[#ccc] mt-1">Crie combos e descontos para atrair mais clientes!</p>
+          <p className="text-xs text-[#ccc] mt-1">Escolha um item do cardápio e dê um desconto para atrair mais clientes!</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {promotions.map(p => (
-            <div key={p.id} className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-[#1a1a1a] truncate">{p.title}</span>
-                  {p.badge && <span className="text-[10px] font-black bg-orange-50 text-orange-500 px-1.5 py-0.5 rounded-full shrink-0">{p.badge}</span>}
+          {promotions.map(p => {
+            const item = menuItems.find(i => i.id === p.menu_item_id);
+            const st = promoStatus(p);
+            const busy = busyId === p.id;
+            return (
+              <div key={p.id} className={`bg-white rounded-2xl shadow-sm p-4 ${editing === p.id ? 'ring-2 ring-[#2D5016]/20' : ''}`}>
+                <div className="flex items-start gap-3">
+                  {(item?.image_url || p.image_url) && (
+                    <img src={item?.image_url ?? p.image_url ?? ''} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-[#1a1a1a]">{p.title}</span>
+                      {p.badge && <span className="text-[10px] font-black bg-orange-50 text-orange-500 px-1.5 py-0.5 rounded-full">{p.badge}</span>}
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+                    </div>
+                    <p className="text-[11px] text-[#999] mt-0.5">
+                      {p.menu_item_id
+                        ? (item ? <>No cardápio: <strong className="text-[#555]">{item.name}</strong></> : 'Item do cardápio')
+                        : `${TYPE_LABEL[p.type]} · só divulgação`}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {p.promo_price != null && (
+                        <>
+                          {(item?.price ?? p.original_price) != null && (
+                            <span className="text-xs text-[#bbb] line-through">{brl(Number(item?.price ?? p.original_price))}</span>
+                          )}
+                          <span className="text-sm font-black text-[#2D5016]">{brl(Number(p.promo_price))}</span>
+                        </>
+                      )}
+                      {p.ends_at && (
+                        <span className="text-[11px] text-[#999] flex items-center gap-0.5">
+                          <Calendar size={10} /> até {new Date(p.ends_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[11px] text-[#aaa]">{TYPE_LABEL[p.type]}</span>
-                  {p.promo_price && (
-                    <>
-                      {p.original_price && <span className="text-[11px] text-[#ccc] line-through">R$ {Number(p.original_price).toFixed(2).replace('.', ',')}</span>}
-                      <span className="text-[11px] font-bold text-[#2D5016]">R$ {Number(p.promo_price).toFixed(2).replace('.', ',')}</span>
-                    </>
-                  )}
-                  {p.ends_at && (
-                    <span className="text-[11px] text-[#bbb] flex items-center gap-0.5">
-                      <Calendar size={10} /> até {new Date(p.ends_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                    </span>
-                  )}
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50">
+                  <button onClick={() => handleToggle(p)} disabled={busy}
+                    className={`flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 ${p.is_active ? 'bg-gray-100 text-[#555] hover:bg-gray-200' : 'bg-[#e8f5e0] text-[#2D5016] hover:bg-[#d8eecb]'}`}>
+                    {p.is_active ? <><EyeOff size={14} /> Pausar</> : <><Eye size={14} /> Ativar</>}
+                  </button>
+                  <button onClick={() => openEdit(p)} disabled={busy}
+                    className="flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-[#2D5016] text-white hover:bg-[#3d6b1e] transition-colors disabled:opacity-40">
+                    <Pencil size={14} /> Editar
+                  </button>
+                  <button onClick={() => handleRemove(p.id)} disabled={busy} aria-label="Remover promoção"
+                    className="w-9 h-9 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-40 shrink-0">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {/* Toggle ativo/inativo */}
-                <button
-                  onClick={async () => { setBusyId(p.id); try { await onToggle(p.id, !p.is_active); } finally { setBusyId(null); } }}
-                  disabled={busyId === p.id}
-                  title={p.is_active ? 'Desativar' : 'Ativar'}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors disabled:opacity-40 ${p.is_active ? 'bg-[#e8f5e0] text-[#2D5016]' : 'bg-gray-100 text-[#aaa]'}`}>
-                  {p.is_active ? <Check size={14} /> : <Toggle size={14} />}
-                </button>
-                <button
-                  onClick={() => handleRemove(p.id)} disabled={busyId === p.id}
-                  className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-40">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
