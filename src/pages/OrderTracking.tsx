@@ -80,6 +80,11 @@ export function OrderTracking() {
             <p className="text-xs text-[#999] mb-0.5">Pedido</p>
             <p className="text-2xl font-black bg-gradient-to-r from-[#2D5016] to-[#6BA534] bg-clip-text text-transparent">#{order.order_number}</p>
             <p className="text-xs text-[#aaa] mt-1">{formatDate(order.created_at)}</p>
+            {order.restaurant_name && (
+              <Link to={`/restaurantes/${order.restaurant_id}`} className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-[#2D5016] hover:underline">
+                <Store size={14} className="text-[#6BA534]" /> {order.restaurant_name}
+              </Link>
+            )}
           </div>
           <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
             cancelled ? 'bg-red-50 text-red-600' : 'bg-[#e8f5e0] text-[#2D5016]'

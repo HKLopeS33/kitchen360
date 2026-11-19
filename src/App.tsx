@@ -7,6 +7,8 @@ import { Register } from './pages/Register';
 import { Cart } from './pages/Cart';
 import { Restaurants } from './pages/Restaurants';
 import { RestaurantDashboard } from './pages/RestaurantDashboard';
+import { RestaurantSettings } from './pages/RestaurantSettings';
+import { RestaurantStoreSettings } from './pages/RestaurantStoreSettings';
 import { RestaurantMenu } from './pages/RestaurantMenu';
 import { PaymentStatus } from './pages/PaymentStatus';
 import { OrderTracking } from './pages/OrderTracking';
@@ -38,6 +40,8 @@ export default function App() {
             <Route path="/restaurantes" element={<Restaurants />} />
             <Route path="/restaurantes/:id" element={<RestaurantMenu />} />
             <Route path="/meu-restaurante" element={<RestaurantDashboard />} />
+            <Route path="/configuracoes" element={<RestaurantSettings />} />
+            <Route path="/configuracoes/estabelecimento" element={<RestaurantStoreSettings />} />
             <Route path="/assinatura" element={<SubscriptionPage />} />
             <Route path="/assinatura-status" element={<SubscriptionStatus />} />
             <Route path="/admin" element={<AdminDashboard />} />

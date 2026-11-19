@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Leaf, Package, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Leaf, Package, ChevronRight, Store } from 'lucide-react';
 import { useAuth } from '../helpers/useAuth';
 import { useClientOrders, type OrderStatus } from '../helpers/useOrders';
 
@@ -73,12 +73,19 @@ export function ClientOrders() {
                 className="block bg-white rounded-2xl shadow-sm card-hover animate-fade-in-up p-4"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-bold text-[#1a1a1a]">Pedido #{order.order_number}</p>
-                    <p className="text-xs text-[#999] mt-0.5">{formatDate(order.created_at)}</p>
-                    <p className="text-xs text-[#888] mt-1 line-clamp-1">
-                      {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}
-                    </p>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#e8f5e0] flex items-center justify-center shrink-0">
+                      {order.restaurant_image
+                        ? <img src={order.restaurant_image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        : <Store size={20} className="text-[#6BA534]" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-[#1a1a1a] truncate">{order.restaurant_name ?? 'Estabelecimento'}</p>
+                      <p className="text-xs text-[#999] mt-0.5">Pedido #{order.order_number} · {formatDate(order.created_at)}</p>
+                      <p className="text-xs text-[#888] mt-1 line-clamp-1">
+                        {order.items.map(i => `${i.quantity}× ${i.name}`).join(', ')}
+                      </p>
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${STATUS_COLORS[order.status]}`}>

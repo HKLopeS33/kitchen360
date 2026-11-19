@@ -77,12 +77,16 @@ begin
     v_promo := public.item_promo_price(v_item.id);
     v_price := coalesce(v_promo, v_item.price);
 
-    v_items := v_items || jsonb_build_object(
-      'id', v_item.id, 'name', v_item.name, 'category', v_item.category,
-      'price', v_price, 'quantity', v_qty
-    ) || case when v_promo is not null
-              then jsonb_build_object('original_price', v_item.price)
-              else '{}'::jsonb end;
+    -- Os parênteses importam: sem eles, "lista || objeto || '{}'" acrescenta
+    -- o '{}' como um item a mais na lista.
+    v_items := v_items || jsonb_build_array(
+      jsonb_build_object(
+        'id', v_item.id, 'name', v_item.name, 'category', v_item.category,
+        'price', v_price, 'quantity', v_qty
+      ) || case when v_promo is not null
+                then jsonb_build_object('original_price', v_item.price)
+                else '{}'::jsonb end
+    );
     v_total := v_total + v_price * v_qty;
   end loop;
 

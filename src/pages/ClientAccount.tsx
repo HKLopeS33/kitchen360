@@ -64,7 +64,7 @@ function ClientAccountForm() {
     <div className="min-h-screen bg-[#f7f5f0]">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-4 flex items-center gap-3">
-          <Link to="/restaurantes" className="text-[#555] hover:text-[#1a1a1a]">
+          <Link to={user?.role === 'restaurant_owner' ? '/meu-restaurante' : '/restaurantes'} className="text-[#555] hover:text-[#1a1a1a]">
             <ArrowLeft size={22} />
           </Link>
           <span className="font-bold text-[#1a1a1a] flex items-center gap-2">

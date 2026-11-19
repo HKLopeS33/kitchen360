@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Leaf, Clock, MapPin, Phone, Store, ToggleLeft, ToggleRight,
-  LogOut, Eye, Plus, Trash2, Pencil, X, Check,
-  Package, UtensilsCrossed, Settings, Wallet, ExternalLink, EyeOff, CheckCircle2, AlertCircle,
+  Leaf, Store, ToggleLeft, ToggleRight,
+  Eye, Plus, Trash2, Pencil, X, Check,
+  Package, UtensilsCrossed, EyeOff,
   Share2, Copy, ShieldCheck, Tag, Calendar, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,29 +14,36 @@ import { useMyPromotions, type Promotion } from '../helpers/usePromotions';
 import { Button } from '../components/Button';
 import { ImageUpload } from '../components/ImageUpload';
 import { OrdersPanel } from '../components/OrdersPanel';
-import { supabase } from '../lib/supabase';
+import { NotificationBell } from '../components/NotificationBell';
+import { OwnerMenu } from '../components/OwnerMenu';
+import { RestaurantDetailsForm, type RestaurantDetails } from '../components/RestaurantDetailsForm';
+import { NewOrderBanner } from '../components/OrderAlerts';
+import { useNewOrderAlerts } from '../helpers/useNewOrderAlerts';
+import { unlockAudio } from '../helpers/orderAlerts';
 import type { MenuItem } from '../lib/supabase';
-import { CATEGORIES, type Category } from '../lib/categories';
 
-type Tab = 'pedidos' | 'cardapio' | 'promocoes' | 'dados';
-
-function InputField({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div>
-      <label className="block text-sm font-semibold text-[#333] mb-1.5">{label}</label>
-      <input {...props}
-        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all"
-      />
-    </div>
-  );
-}
+type Tab = 'pedidos' | 'cardapio' | 'promocoes';
 
 export function RestaurantDashboard() {
-  const { user, logout, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { restaurant, isLoading: restaurantLoading, createRestaurant, updateRestaurant, toggleOpenToday } = useMyRestaurant(user?.id ?? null);
+  const { restaurant, isLoading: restaurantLoading, createRestaurant, toggleOpenToday } = useMyRestaurant(user?.id ?? null);
 
-  const [tab, setTab] = useState<Tab>('pedidos');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('aba');
+  const [tab, setTab] = useState<Tab>(
+    initialTab === 'cardapio' || initialTab === 'promocoes' ? initialTab : 'pedidos',
+  );
+
+  // Alertas de pedido novo: valem em qualquer aba do painel.
+  const { alerts, acknowledge } = useNewOrderAlerts(restaurant?.id ?? null);
+  const viewNewOrders = () => { acknowledge(); setTab('pedidos'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  // O navegador só libera som depois do primeiro toque na página.
+  useEffect(() => {
+    window.addEventListener('pointerdown', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
+    return () => { window.removeEventListener('pointerdown', unlockAudio); window.removeEventListener('keydown', unlockAudio); };
+  }, []);
 
   // Adia a busca do cardápio até a aba "Cardápio" ser aberta — evita atraso na exibição inicial (Pedidos)
   const [menuLoaded, setMenuLoaded] = useState(false);
@@ -44,42 +51,8 @@ export function RestaurantDashboard() {
   const { promotions, create: createPromo, update: updatePromo, toggle: togglePromo, remove: removePromo } = useMyPromotions(restaurant?.id ?? null);
   const { items: menuItems, isLoading: loadingMenu, createItem, updateItem, deleteItem } = useMenuItems(menuLoaded ? (restaurant?.id ?? null) : null);
   const [toggling, setToggling] = useState(false);
-  const [saving, setSaving] = useState(false);
 
-  // Form dados do restaurante
-  const [form, setForm] = useState({
-    name: '', description: '', phone: '', address: '',
-    open_time: '08:00', close_time: '18:00', image_url: '', is_open_today: false,
-    category: 'restaurante' as Category,
-    free_shipping: false, promo_text: '', delivery_time_min: 30, delivery_time_max: 50,
-    mp_public_key: '',
-  });
-  const [showToken, setShowToken] = useState(false);
-  // Token do Mercado Pago: só é enviado ao banco, nunca lido de volta.
-  const [mpTokenInput, setMpTokenInput] = useState('');
-  const [mpConfigured, setMpConfigured] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-
-  useEffect(() => {
-    if (restaurant) {
-      setForm({
-        name: restaurant.name,
-        description: restaurant.description,
-        phone: restaurant.phone,
-        address: restaurant.address,
-        open_time: restaurant.open_time.slice(0, 5),
-        close_time: restaurant.close_time.slice(0, 5),
-        image_url: restaurant.image_url ?? '',
-        is_open_today: restaurant.is_open_today,
-        category: (restaurant.category as Category) ?? 'restaurante',
-        free_shipping: restaurant.free_shipping ?? false,
-        promo_text: restaurant.promo_text ?? '',
-        delivery_time_min: restaurant.delivery_time_min ?? 30,
-        delivery_time_max: restaurant.delivery_time_max ?? 50,
-        mp_public_key: restaurant.mp_public_key ?? '',
-      });
-    }
-  }, [restaurant]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -122,38 +95,14 @@ export function RestaurantDashboard() {
     catch (err: any) { toast.error(err.message); }
   }
 
-  useEffect(() => {
-    if (!restaurant?.id) return;
-    supabase.rpc('restaurant_mp_token_configured', { p_restaurant_id: restaurant.id })
-      .then(({ data }) => setMpConfigured(data === true));
-  }, [restaurant?.id]);
-
-  async function saveMpToken(restaurantId: string) {
-    if (!mpTokenInput.trim()) return;
-    const { error } = await supabase.rpc('set_restaurant_mp_token', { p_restaurant_id: restaurantId, p_token: mpTokenInput.trim() });
-    if (error) throw new Error(`Dados salvos, mas o token não: ${error.message}`);
-    setMpTokenInput('');
-    setShowToken(false);
-    setMpConfigured(true);
-  }
-
-  const field = (key: keyof typeof form) => ({
-    value: form[key] as string,
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [key]: e.target.value })),
-  });
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.name.trim()) { toast.error('Nome obrigatório'); return; }
-    if (!restaurant && !acceptedTerms) { toast.error('Você precisa aceitar a política de uso e assinatura para continuar.'); return; }
-    setSaving(true);
+  async function handleCreate(values: RestaurantDetails) {
+    if (!values.name) { toast.error('Nome obrigatório'); return; }
+    if (!acceptedTerms) { toast.error('Você precisa aceitar a política de uso e assinatura para continuar.'); return; }
     try {
-      const payload: any = { name: form.name.trim(), description: form.description.trim(), phone: form.phone.trim(), address: form.address.trim(), open_time: form.open_time, close_time: form.close_time, image_url: form.image_url || null, is_open_today: form.is_open_today, category: form.category, free_shipping: form.free_shipping, promo_text: form.promo_text.trim() || null, delivery_time_min: Number(form.delivery_time_min) || 30, delivery_time_max: Number(form.delivery_time_max) || 50, mp_public_key: form.mp_public_key.trim() || null };
-      if (!restaurant) payload.accepted_terms_at = new Date().toISOString();
-      if (restaurant) { await updateRestaurant(payload); await saveMpToken(restaurant.id); toast.success('Dados atualizados!'); }
-      else { const created = await createRestaurant(payload); await saveMpToken(created.id); toast.success('Restaurante cadastrado!'); setTab('pedidos'); }
+      await createRestaurant({ ...values, accepted_terms_at: new Date().toISOString() } as any);
+      toast.success('Restaurante cadastrado! Conecte o Mercado Pago em Configurações para receber online.');
+      setTab('pedidos');
     } catch (err: any) { toast.error(err.message); }
-    finally { setSaving(false); }
   }
 
   async function handleToggle() {
@@ -173,21 +122,23 @@ export function RestaurantDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f7f5f0]">
+      <NewOrderBanner alerts={alerts} onView={viewNewOrders} />
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-2xl lg:max-w-3xl mx-auto safe-px py-4 flex items-center justify-between">
           <Link to="/restaurantes" className="flex items-center gap-2 text-[#2D5016] font-bold text-lg">
             <Leaf size={22} className="text-[#6BA534]" /> Floresta Já
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link to="/restaurantes"
-              className="text-sm text-[#777] hover:text-[#2D5016] flex items-center gap-1 transition-colors">
+              className="text-sm text-[#777] hover:text-[#2D5016] hidden sm:flex items-center gap-1 transition-colors mr-1">
               <Eye size={15} /> Ver restaurantes
             </Link>
-            <button onClick={async () => { await logout(); navigate('/login'); }}
-              className="text-sm text-[#777] hover:text-[#333] flex items-center gap-1 transition-colors">
-              <LogOut size={15} /> Sair
-            </button>
+            <NotificationBell
+              userId={user.id}
+              onOpen={(n) => { if (n.type === 'new_order' || n.type === 'order_status') { viewNewOrders(); return true; } return false; }}
+            />
+            <OwnerMenu />
           </div>
         </div>
       </header>
@@ -234,89 +185,12 @@ export function RestaurantDashboard() {
             <h2 className="font-bold text-[#1a1a1a] mb-5 flex items-center gap-2">
               <Store size={18} className="text-[#6BA534]" /> Cadastre seu estabelecimento
             </h2>
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-[#333] mb-2">Categoria *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CATEGORIES.map(c => {
-                    const Icon = c.icon;
-                    const active = form.category === c.id;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setForm(f => ({ ...f, category: c.id }))}
-                        className={`flex items-center gap-2 px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
-                          active
-                            ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016]'
-                            : 'border-gray-200 bg-white text-[#666] hover:border-gray-300'
-                        }`}
-                      >
-                        <Icon size={17} className={active ? 'text-[#2D5016]' : 'text-[#aaa]'} />
-                        {c.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <InputField label="Nome do estabelecimento *" placeholder="Ex: Fit Grill Floresta" {...field('name')} required />
-              <InputField label="Descrição" placeholder="Uma breve descrição" {...field('description')} />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><Clock size={13} className="text-[#6BA534]" /> Abre às</label>
-                  <input type="time" value={form.open_time} onChange={e => setForm(f => ({ ...f, open_time: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><Clock size={13} className="text-[#6BA534]" /> Fecha às</label>
-                  <input type="time" value={form.close_time} onChange={e => setForm(f => ({ ...f, close_time: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-[#333] mb-1.5">⏱ Entrega mín. (min)</label>
-                  <input type="number" min={5} value={form.delivery_time_min}
-                    onChange={e => setForm(f => ({ ...f, delivery_time_min: Number(e.target.value) }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-[#333] mb-1.5">⏱ Entrega máx. (min)</label>
-                  <input type="number" min={5} value={form.delivery_time_max}
-                    onChange={e => setForm(f => ({ ...f, delivery_time_max: Number(e.target.value) }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#333] mb-1.5">🔥 Texto de promoção (opcional)</label>
-                <input value={form.promo_text} onChange={e => setForm(f => ({ ...f, promo_text: e.target.value }))} placeholder="Ex: 20% OFF hoje, 2 por 1..."
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-              </div>
-              <button
-                type="button"
-                onClick={() => setForm(f => ({ ...f, free_shipping: !f.free_shipping }))}
-                className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
-                  form.free_shipping ? 'border-[#2D5016] bg-[#e8f5e0] glow-brand' : 'border-gray-200 hover:border-[#bcd9a4] bg-white'
-                }`}
-              >
-                <span className="text-xl">🛵</span>
-                <div className="flex-1">
-                  <p className={`font-semibold text-sm ${form.free_shipping ? 'text-[#2D5016]' : 'text-[#333]'}`}>Frete grátis</p>
-                  <p className="text-xs text-[#888]">Exibe um selo de frete grátis nos cards do estabelecimento</p>
-                </div>
-                <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${form.free_shipping ? 'border-[#2D5016] bg-[#2D5016]' : 'border-gray-300'}`} />
-              </button>
-              <div>
-                <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><MapPin size={13} className="text-[#6BA534]" /> Endereço</label>
-                <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Rua, número, bairro"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><Phone size={13} className="text-[#6BA534]" /> Telefone / WhatsApp</label>
-                <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="(87) 99999-9999"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-              </div>
-              <ImageUpload currentUrl={form.image_url || null} onUpload={url => setForm(f => ({ ...f, image_url: url }))} onRemove={() => setForm(f => ({ ...f, image_url: '' }))} folder="restaurantes" aspectRatio="aspect-video" />
+            <RestaurantDetailsForm
+              restaurant={null}
+              onSubmit={handleCreate}
+              submitLabel="Cadastrar restaurante"
+              submitDisabled={!acceptedTerms}
+            >
 
               {/* Resumo da política de assinatura + aceite */}
               <div className="bg-[#f7fbf3] border border-[#e3ede0] rounded-2xl p-4 space-y-2.5">
@@ -347,8 +221,7 @@ export function RestaurantDashboard() {
                 </label>
               </div>
 
-              <Button type="submit" fullWidth loading={saving} size="lg" disabled={!acceptedTerms}>Cadastrar restaurante</Button>
-            </form>
+            </RestaurantDetailsForm>
           </div>
         ) : (
           <>
@@ -410,7 +283,6 @@ export function RestaurantDashboard() {
                 { key: 'pedidos',   label: 'Pedidos',    icon: <Package size={15} /> },
                 { key: 'cardapio',  label: 'Cardápio',   icon: <UtensilsCrossed size={15} /> },
                 { key: 'promocoes', label: 'Promoções',  icon: <Tag size={15} /> },
-                { key: 'dados',     label: 'Dados',      icon: <Settings size={15} /> },
               ] as { key: Tab; label: string; icon: React.ReactNode }[]).map(t => (
                 <button
                   key={t.key}
@@ -522,129 +394,6 @@ export function RestaurantDashboard() {
               />
             )}
 
-            {/* ── ABA DADOS ── */}
-            {tab === 'dados' && (
-              <div className="bg-white rounded-2xl shadow-sm p-6">
-                <h2 className="font-bold text-[#1a1a1a] mb-5 flex items-center gap-2">
-                  <Settings size={18} className="text-[#6BA534]" /> Dados do estabelecimento
-                </h2>
-                <form onSubmit={handleSave} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#333] mb-2">Categoria *</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {CATEGORIES.map(c => {
-                        const Icon = c.icon;
-                        const active = form.category === c.id;
-                        return (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => setForm(f => ({ ...f, category: c.id }))}
-                            className={`flex items-center gap-2 px-3 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
-                              active
-                                ? 'border-[#2D5016] bg-[#e8f5e0] text-[#2D5016]'
-                                : 'border-gray-200 bg-white text-[#666] hover:border-gray-300'
-                            }`}
-                          >
-                            <Icon size={17} className={active ? 'text-[#2D5016]' : 'text-[#aaa]'} />
-                            {c.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <InputField label="Nome *" placeholder="Ex: Fit Grill Floresta" {...field('name')} required />
-                  <InputField label="Descrição" placeholder="Uma breve descrição" {...field('description')} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><Clock size={13} className="text-[#6BA534]" /> Abre às</label>
-                      <input type="time" value={form.open_time} onChange={e => setForm(f => ({ ...f, open_time: e.target.value }))}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><Clock size={13} className="text-[#6BA534]" /> Fecha às</label>
-                      <input type="time" value={form.close_time} onChange={e => setForm(f => ({ ...f, close_time: e.target.value }))}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><MapPin size={13} className="text-[#6BA534]" /> Endereço</label>
-                    <input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Rua, número, bairro"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#333] mb-1.5 flex items-center gap-1"><Phone size={13} className="text-[#6BA534]" /> Telefone / WhatsApp</label>
-                    <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="(87) 99999-9999"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all" />
-                  </div>
-                  <ImageUpload currentUrl={form.image_url || null} onUpload={url => setForm(f => ({ ...f, image_url: url }))} onRemove={() => setForm(f => ({ ...f, image_url: '' }))} folder="restaurantes" aspectRatio="aspect-video" />
-
-                  {/* Pagamentos online — token Mercado Pago do próprio restaurante */}
-                  <div className="border border-[#e8f5e0] rounded-2xl p-4 bg-[#f9fdf6] space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-sm text-[#2D5016] flex items-center gap-2">
-                        <Wallet size={16} /> Pagamentos online
-                      </h3>
-                      {mpConfigured ? (
-                        <span className="flex items-center gap-1 text-xs font-semibold text-[#2D5016] bg-[#e8f5e0] px-2.5 py-1 rounded-full">
-                          <CheckCircle2 size={13} /> Configurado
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
-                          <AlertCircle size={13} /> Pendente
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-[#777] leading-relaxed">
-                      Para receber pagamentos online (Pix e cartão de crédito) diretamente na sua conta,
-                      conecte seu <strong>Access Token de Produção</strong> do Mercado Pago. Sem isso,
-                      seu restaurante não poderá receber pedidos com pagamento online.
-                    </p>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#333] mb-1">Access Token (Mercado Pago)</label>
-                      <div className="relative">
-                        <input
-                          type={showToken ? 'text' : 'password'}
-                          value={mpTokenInput}
-                          onChange={e => setMpTokenInput(e.target.value)}
-                          autoComplete="off"
-                          placeholder={mpConfigured ? 'Token salvo — cole um novo para trocar' : 'APP_USR-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}
-                          className="w-full border border-gray-200 rounded-xl pl-4 pr-10 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all font-mono"
-                        />
-                        <button type="button" onClick={() => setShowToken(s => !s)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#555] transition-colors">
-                          {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#333] mb-1">Public Key (Mercado Pago) — para cartão no app</label>
-                      <input
-                        value={form.mp_public_key}
-                        onChange={e => setForm(f => ({ ...f, mp_public_key: e.target.value }))}
-                        autoComplete="off"
-                        placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all font-mono"
-                      />
-                      <p className="mt-1 text-[11px] text-[#999]">Fica na mesma tela de credenciais do Access Token. Sem ela, seus clientes pagam só com Pix.</p>
-                    </div>
-                    <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2D5016] hover:underline">
-                      <ExternalLink size={13} /> Não tem um token? Crie sua aplicação gratuita no Mercado Pago
-                    </a>
-                    <ol className="text-xs text-[#888] list-decimal list-inside space-y-0.5 pl-1">
-                      <li>Crie uma conta gratuita no Mercado Pago (CPF ou CNPJ)</li>
-                      <li>Acesse o painel de desenvolvedores e clique em "Criar aplicação"</li>
-                      <li>Escolha "Pagamentos online" como modelo de integração</li>
-                      <li>Copie o <strong>Access Token</strong> e a <strong>Public Key</strong> de Produção (começam com <code>APP_USR-</code>)</li>
-                      <li>Cole nos campos acima e salve</li>
-                    </ol>
-                  </div>
-
-                  <Button type="submit" fullWidth loading={saving} size="lg">Salvar alterações</Button>
-                </form>
-              </div>
-            )}
           </>
         )}
       </main>

@@ -29,6 +29,23 @@ export interface Order {
   // campos extras do join (só em useOrderTracking)
   restaurant_name?: string;
   restaurant_phone?: string;
+  restaurant_image?: string | null;
+}
+
+/** Remove itens vazios (pedidos gravados com o bug do item em branco). */
+function clean<T extends { items?: OrderItem[] }>(o: T): T {
+  return { ...o, items: (Array.isArray(o.items) ? o.items : []).filter(i => i && i.name) };
+}
+
+/** Pedido vindo do banco com o join restaurants(...) → campos achatados. */
+function withRestaurant(row: any): Order {
+  const { restaurants: rest, ...order } = row ?? {};
+  return clean({
+    ...order,
+    restaurant_name: rest?.name,
+    restaurant_phone: rest?.phone,
+    restaurant_image: rest?.image_url ?? null,
+  } as Order);
 }
 
 // Hook para o RESTAURANTE acompanhar seus pedidos (com realtime)
@@ -49,7 +66,7 @@ export function useRestaurantOrders(restaurantId: string | null) {
       // Pedidos com pagamento ainda não confirmado não são exibidos ao estabelecimento
       .neq('status', 'awaiting_payment')
       .order('created_at', { ascending: false });
-    setOrders((data as Order[]) ?? []);
+    setOrders(((data as Order[]) ?? []).map(clean));
     loadedOnce.current = true;
     setIsLoading(false);
   }, [restaurantId]);
@@ -68,13 +85,13 @@ export function useRestaurantOrders(restaurantId: string | null) {
         filter: `restaurant_id=eq.${restaurantId}`,
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          const newOrder = payload.new as Order;
+          const newOrder = clean(payload.new as Order);
           // Só exibe ao estabelecimento se o pagamento já foi confirmado
           if (newOrder.status !== 'awaiting_payment') {
             setOrders(prev => [newOrder, ...prev]);
           }
         } else if (payload.eventType === 'UPDATE') {
-          const updated = payload.new as Order;
+          const updated = clean(payload.new as Order);
           setOrders(prev => {
             const exists = prev.some(o => o.id === updated.id);
             if (updated.status === 'awaiting_payment') {
@@ -168,10 +185,10 @@ export function useClientOrders(clientId: string | null) {
     if (!loadedOnce.current) setIsLoading(true);
     const { data } = await supabase
       .from('orders')
-      .select('*')
+      .select('*, restaurants(name, phone, image_url)')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
-    setOrders((data as Order[]) ?? []);
+    setOrders((data ?? []).map(withRestaurant));
     loadedOnce.current = true;
     setIsLoading(false);
   }, [clientId]);
@@ -189,14 +206,17 @@ export function useClientOrders(clientId: string | null) {
         filter: `client_id=eq.${clientId}`,
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setOrders(prev => [payload.new as Order, ...prev]);
+          void fetch(); // busca de novo para trazer o nome da loja
         } else if (payload.eventType === 'UPDATE') {
-          setOrders(prev => prev.map(o => o.id === payload.new.id ? payload.new as Order : o));
+          // O evento não traz a loja: mantém os dados que já tínhamos.
+          setOrders(prev => prev.map(o => o.id === payload.new.id
+            ? clean({ ...o, ...(payload.new as Order), restaurant_name: o.restaurant_name, restaurant_phone: o.restaurant_phone, restaurant_image: o.restaurant_image })
+            : o));
         }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [clientId]);
+  }, [clientId, fetch]);
 
   useEffect(() => {
     if (!clientId) return;
@@ -219,13 +239,11 @@ export function useOrderTracking(orderId: string | null) {
     if (!loadedOnce.current) setIsLoading(true);
     const { data } = await supabase
       .from('orders')
-      .select('*, restaurants(name, phone)')
+      .select('*, restaurants(name, phone, image_url)')
       .eq('id', orderId)
       .maybeSingle();
-    if (data) {
-      const { restaurants: rest, ...order } = data as any;
-      setOrder({ ...order, restaurant_name: rest?.name, restaurant_phone: rest?.phone } as Order);
-    } else setNotFound(true);
+    if (data) setOrder(withRestaurant(data));
+    else setNotFound(true);
     loadedOnce.current = true;
     setIsLoading(false);
   }, [orderId]);
@@ -243,7 +261,7 @@ export function useOrderTracking(orderId: string | null) {
         table: 'orders',
         filter: `id=eq.${orderId}`,
       }, (payload) => {
-        setOrder(payload.new as Order);
+        setOrder(prev => clean({ ...(prev ?? {}), ...(payload.new as Order) } as Order));
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };

@@ -20,9 +20,11 @@ const TYPE_ICON: Record<AppNotification['type'], React.ReactNode> = {
 
 interface Props {
   userId: string | null;
+  /** Trata o clique na notificação; devolva true para não usar a navegação padrão. */
+  onOpen?: (n: AppNotification) => boolean;
 }
 
-export function NotificationBell({ userId }: Props) {
+export function NotificationBell({ userId, onOpen }: Props) {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications(userId);
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -41,6 +43,7 @@ export function NotificationBell({ userId }: Props) {
   const handleClick = async (n: AppNotification) => {
     if (!n.read) await markRead(n.id);
     setOpen(false);
+    if (onOpen?.(n)) return;
     if (n.type === 'new_order' && n.data?.order_id) navigate('/meu-restaurante');
     if (n.type === 'order_status' && n.data?.order_id) navigate(`/pedido/${n.data.order_id}`);
     if (n.type === 'promotion' && n.data?.restaurant_id) navigate(`/restaurantes/${n.data.restaurant_id}`);

@@ -9,6 +9,7 @@ import logo from '../assets/logo-icon.png';
 import { Footer } from '../components/Footer';
 import { PromotionsCarousel } from '../components/PromotionsCarousel';
 import { NotificationBell } from '../components/NotificationBell';
+import { OwnerMenu } from '../components/OwnerMenu';
 
 type QuickFilter = 'todos' | 'aberto' | 'frete' | 'promo';
 
@@ -91,9 +92,8 @@ export function Restaurants() {
                   <Link to="/meu-restaurante" className="flex items-center gap-1.5 h-10 px-3 rounded-full bg-[#f1f5ec] text-sm font-semibold text-[#2D5016]">
                     <UtensilsCrossed size={15} /> <span className="hidden sm:inline">Meu estabelecimento</span><span className="sm:hidden">Painel</span>
                   </Link>
-                  <button onClick={logout} className={iconBtn} aria-label="Sair">
-                    <LogOut size={17} />
-                  </button>
+                  <NotificationBell userId={user.id} />
+                  <OwnerMenu />
                 </>
               ) : (
                 <>
