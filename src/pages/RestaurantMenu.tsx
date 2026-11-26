@@ -113,7 +113,7 @@ export function RestaurantMenu() {
         {/* Restaurant info */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-6 animate-fade-in-up">
           {restaurant.image_url && (
-            <img src={restaurant.image_url} alt={restaurant.name} className="w-full h-44 object-cover" />
+            <img src={restaurant.image_url} alt={restaurant.name} fetchPriority="high" decoding="async" width={800} height={176} className="w-full h-44 object-cover" />
           )}
           <div className="p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
@@ -195,7 +195,7 @@ export function RestaurantMenu() {
                     return (
                       <div key={`${cat}-${item.id}`} className="bg-white rounded-2xl shadow-sm p-4 flex gap-4 card-hover">
                         {item.image_url && (
-                          <img src={item.image_url} alt={item.name} className="w-20 h-20 object-cover rounded-xl shrink-0" />
+                          <img src={item.image_url} alt={item.name} loading="lazy" decoding="async" width={80} height={80} className="w-20 h-20 object-cover rounded-xl shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-2">

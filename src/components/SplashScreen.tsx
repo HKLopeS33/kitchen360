@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import logo from '../assets/logo-icon.png';
+import { Capacitor } from '@capacitor/core';
+import logo from '../assets/logo.webp';
+import { isStandalone } from '../helpers/pwaInstall';
+
+// No navegador a splash só atrasaria o conteúdo (pior nota de desempenho);
+// ela aparece apenas no app instalado (PWA na tela inicial ou APK).
+const SHOW_SPLASH = Capacitor.isNativePlatform() || isStandalone();
 
 /**
  * Splash de abertura exibido brevemente ao carregar o app (web e Android),
@@ -7,12 +13,13 @@ import logo from '../assets/logo-icon.png';
  * similar à splash nativa do APK, mas controlada via React/CSS.
  */
 export function SplashScreen() {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(SHOW_SPLASH);
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFading(true), 2150);
-    const hideTimer = setTimeout(() => setVisible(false), 2500);
+    if (!SHOW_SPLASH) return;
+    const fadeTimer = setTimeout(() => setFading(true), 1100);
+    const hideTimer = setTimeout(() => setVisible(false), 1450);
     return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
   }, []);
 
@@ -26,7 +33,7 @@ export function SplashScreen() {
       }}
     >
       <div className="w-28 h-28 rounded-[2rem] bg-[#eafbe0] shadow-[0_8px_32px_rgba(0,0,0,0.25)] flex items-center justify-center animate-scale-in">
-        <img src={logo} alt="" className="w-20 h-20 object-contain" />
+        <img src={logo} alt="" width={80} height={80} className="w-20 h-20 object-contain" />
       </div>
       <div className="text-center animate-fade-in-up" style={{ animationDelay: '120ms' }}>
         <h1 className="text-3xl font-black text-white tracking-tight">Floresta Já</h1>

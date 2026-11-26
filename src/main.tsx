@@ -30,6 +30,17 @@ if (Capacitor.isNativePlatform()) {
   });
 }
 
+// Depois de uma atualização do site, uma aba antiga pode pedir um pedaço do
+// app que já não existe: recarrega uma vez para pegar a versão nova.
+window.addEventListener('vite:preloadError', (e) => {
+  e.preventDefault();
+  try {
+    if (sessionStorage.getItem('reloaded-after-update')) return;
+    sessionStorage.setItem('reloaded-after-update', '1');
+  } catch { /* sem armazenamento: recarrega mesmo assim */ }
+  window.location.reload();
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

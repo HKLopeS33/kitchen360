@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
 import { Button } from '../components/Button';
 import type { UserRole } from '../lib/supabase';
-import logo from '../assets/logo-icon.png';
+import logo from '../assets/logo.webp';
 
 export function Register() {
   const { register, user, isLoading } = useAuth();

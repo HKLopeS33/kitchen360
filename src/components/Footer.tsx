@@ -22,13 +22,13 @@ export function Footer() {
 
         <nav className="flex flex-wrap gap-x-5 gap-y-2 mb-5">
           {LINKS.map(l => (
-            <Link key={l.to} to={l.to} className="text-xs font-semibold text-[#777] hover:text-[#2D5016] transition-colors">
+            <Link key={l.to} to={l.to} className="text-xs font-semibold text-[#5c6556] hover:text-[#2D5016] transition-colors">
               {l.label}
             </Link>
           ))}
         </nav>
 
-        <p className="text-[11px] text-[#bbb] leading-relaxed">
+        <p className="text-[11px] text-[#6b7465] leading-relaxed">
           © {new Date().getFullYear()} Floresta Já · Sabores de Floresta - PE, na sua porta.
           <br />
           Todos os direitos reservados.

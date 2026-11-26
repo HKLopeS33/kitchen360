@@ -4,7 +4,7 @@ import { Leaf, Mail, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/Button';
-import logo from '../assets/logo-icon.png';
+import logo from '../assets/logo.webp';
 
 export function ForgotPassword() {
   const [email, setEmail] = useState('');

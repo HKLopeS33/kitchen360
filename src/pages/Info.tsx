@@ -1,7 +1,7 @@
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { INFO_PAGES } from '../lib/infoContent';
-import logo from '../assets/logo-icon.png';
+import logo from '../assets/logo.webp';
 
 export function Info() {
   const { pathname } = useLocation();

@@ -5,7 +5,7 @@ import { useRestaurants } from '../helpers/useRestaurants';
 import { useAuth } from '../helpers/useAuth';
 import { useCart } from '../helpers/useCart';
 import { CATEGORIES, getCategory, type Category } from '../lib/categories';
-import logo from '../assets/logo-icon.png';
+import logo from '../assets/logo.webp';
 import { Footer } from '../components/Footer';
 import { PromotionsCarousel } from '../components/PromotionsCarousel';
 import { NotificationBell } from '../components/NotificationBell';
@@ -82,7 +82,7 @@ export function Restaurants() {
       <header className="bg-white/95 backdrop-blur-md border-b border-[#eceee8] sticky top-0 z-30">
         <div className={`${CONTAINER} h-16 flex items-center justify-between gap-3`}>
           <Link to="/" className="flex items-center gap-2 min-w-0">
-            <img src={logo} alt="" className="h-8 w-auto object-contain shrink-0" />
+            <img src={logo} alt="" width={28} height={32} className="h-8 w-auto object-contain shrink-0" />
             <span className="font-black text-[17px] text-[#2D5016] tracking-tight truncate">Floresta Já</span>
           </Link>
 
@@ -167,12 +167,12 @@ export function Restaurants() {
         {/* Título + busca */}
         <section className="flex flex-col gap-4 animate-fade-in-up">
           <div>
-            <p className="flex items-center gap-1 text-[13px] font-semibold text-[#6BA534]">
+            <p className="flex items-center gap-1 text-[13px] font-semibold text-[#3f7a1f]">
               <MapPin size={14} /> Floresta, PE
             </p>
             <h1 className="mt-1 text-[26px] sm:text-3xl leading-tight font-black tracking-tight text-[#1f3a0f]">{title}</h1>
             {!isLoading && (
-              <p className="mt-1 text-sm text-[#7a8274]">
+              <p className="mt-1 text-sm text-[#5c6556]">
                 <span className="font-semibold text-[#2D5016]">{openCount} abertos agora</span>
                 {' · '}{restaurants.length} no total
               </p>
@@ -185,7 +185,7 @@ export function Restaurants() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar restaurante ou prato"
-              className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-[#1a1a1a] placeholder:text-[#a3aa9d]"
+              className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-[#1a1a1a] placeholder:text-[#7a8274]"
             />
             {search && (
               <button onClick={() => setSearch('')} aria-label="Limpar busca" className="shrink-0 w-7 h-7 -mr-1 rounded-full bg-[#f1f5ec] text-[#6b7465] flex items-center justify-center">
@@ -229,7 +229,7 @@ export function Restaurants() {
             <h2 className="text-base font-bold text-[#1a1a1a]">
               {hasFilters ? 'Resultados' : 'Todos os estabelecimentos'}
             </h2>
-            {!isLoading && <span className="text-xs text-[#8a9483]">{filtered.length} {filtered.length === 1 ? 'local' : 'locais'}</span>}
+            {!isLoading && <span className="text-xs text-[#5c6556]">{filtered.length} {filtered.length === 1 ? 'local' : 'locais'}</span>}
           </div>
 
           {isLoading ? (
@@ -249,7 +249,7 @@ export function Restaurants() {
                 <Search size={24} className="text-[#6BA534]" />
               </div>
               <p className="text-[#1a1a1a] font-semibold">Nenhum estabelecimento encontrado</p>
-              <p className="text-sm text-[#8a9483] mt-1">
+              <p className="text-sm text-[#5c6556] mt-1">
                 {q ? 'Tente buscar por outro nome.' : 'Ainda não há estabelecimentos nessa categoria.'}
               </p>
               {hasFilters && (
@@ -276,7 +276,9 @@ export function Restaurants() {
                   {/* Logo */}
                   <div className={`relative w-[72px] h-[72px] shrink-0 rounded-xl overflow-hidden bg-[#f1f5ec] ${open ? '' : 'grayscale opacity-60'}`}>
                     {restaurant.image_url ? (
-                      <img src={restaurant.image_url} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      <img src={restaurant.image_url} alt="" width={72} height={72} decoding="async"
+                        loading={idx < 4 ? 'eager' : 'lazy'} fetchPriority={idx < 2 ? 'high' : 'auto'}
+                        className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <CatIcon size={28} className="text-[#6BA534]" />
@@ -288,7 +290,7 @@ export function Restaurants() {
                   <div className="flex-1 min-w-0 flex flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="text-[15px] leading-snug font-bold text-[#1a1a1a] truncate">{restaurant.name}</h3>
-                      <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold ${open ? 'text-[#4a8526]' : 'text-[#b4453a]'}`}>
+                      <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold ${open ? 'text-[#3f7a1f]' : 'text-[#b4453a]'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${open ? 'bg-[#6BA534]' : 'bg-[#d0675c]'}`} />
                         {open ? 'Aberto' : 'Fechado'}
                       </span>
@@ -307,7 +309,7 @@ export function Restaurants() {
                     </p>
 
                     {restaurant.description && (
-                      <p className="mt-1 text-xs text-[#8a9483] line-clamp-1">{restaurant.description}</p>
+                      <p className="mt-1 text-xs text-[#5c6556] line-clamp-1">{restaurant.description}</p>
                     )}
 
                     {(restaurant.free_shipping || restaurant.promo_text) && (
@@ -325,7 +327,7 @@ export function Restaurants() {
                       </div>
                     )}
 
-                    <p className="mt-auto pt-1.5 flex items-center gap-1.5 text-[11px] text-[#9aa294] min-w-0">
+                    <p className="mt-auto pt-1.5 flex items-center gap-1.5 text-[11px] text-[#6b7465] min-w-0">
                       <span className="shrink-0 inline-flex items-center gap-1">
                         <Clock size={11} /> {formatTime(restaurant.open_time)}–{formatTime(restaurant.close_time)}
                       </span>

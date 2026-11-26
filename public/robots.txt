@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /meu-restaurante
+Disallow: /configuracoes
+Disallow: /admin
+Disallow: /cart
+Disallow: /pagamento-pendente/
+Disallow: /pedido/

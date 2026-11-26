@@ -2,6 +2,26 @@ import { useRef, useState } from 'react';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+/** Reduz a foto no próprio aparelho (máx. 1200px, WebP): carrega muito mais rápido no app. */
+async function compressImage(file: File, maxSide = 1200, quality = 0.82): Promise<Blob> {
+  if (file.type === 'image/gif' || file.type === 'image/svg+xml') return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/webp', quality));
+    // Usa a versão menor só se realmente ficou menor (e o navegador gerou WebP).
+    return blob && blob.type === 'image/webp' && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
+}
+
 interface ImageUploadProps {
   currentUrl: string | null;
   onUpload: (url: string) => void;
@@ -21,18 +41,19 @@ export function ImageUpload({ currentUrl, onUpload, onRemove, folder = 'geral' }
 
     // Validações
     if (!file.type.startsWith('image/')) { setError('Selecione uma imagem válida (JPG, PNG, WEBP)'); return; }
-    if (file.size > 5 * 1024 * 1024) { setError('Imagem deve ter no máximo 5MB'); return; }
+    if (file.size > 15 * 1024 * 1024) { setError('Imagem deve ter no máximo 15MB'); return; }
 
     setError('');
     setUploading(true);
 
     try {
-      const ext = file.name.split('.').pop();
+      const body = await compressImage(file);
+      const ext = body.type === 'image/webp' ? 'webp' : (file.name.split('.').pop() || 'jpg');
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('imagens')
-        .upload(fileName, file, { upsert: false });
+        .upload(fileName, body, { upsert: false, contentType: body.type || file.type, cacheControl: '31536000' });
 
       if (uploadError) throw uploadError;
 

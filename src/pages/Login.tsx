@@ -4,7 +4,7 @@ import { Leaf, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
 import { Button } from '../components/Button';
-import logo from '../assets/logo-icon.png';
+import logo from '../assets/logo.webp';
 
 export function Login() {
   const { login, user, isLoading } = useAuth();

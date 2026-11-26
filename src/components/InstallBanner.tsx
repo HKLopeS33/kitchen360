@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Download, X, Share, PlusSquare, MoreVertical } from 'lucide-react';
 import { isMobile, useInstallPrompt } from '../helpers/pwaInstall';
-import logo from '../assets/logo-icon.png';
+import logo from '../assets/logo.webp';
 
 const KEY = 'install-banner-dismissed';
 const HIDE_FOR_MS = 7 * 24 * 60 * 60 * 1000;
