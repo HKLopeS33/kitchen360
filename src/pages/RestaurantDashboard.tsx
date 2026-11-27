@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
-import { useMyRestaurant } from '../helpers/useRestaurants';
+import { useMonthlyFee, useMyRestaurant } from '../helpers/useRestaurants';
 import { useMenuItems } from '../helpers/useMenuItems';
 import { useMyPromotions, type Promotion } from '../helpers/usePromotions';
 import { Button } from '../components/Button';
@@ -18,6 +18,7 @@ import { NotificationBell } from '../components/NotificationBell';
 import { OwnerMenu } from '../components/OwnerMenu';
 import { RestaurantDetailsForm, type RestaurantDetails } from '../components/RestaurantDetailsForm';
 import { NewOrderBanner } from '../components/OrderAlerts';
+import { pctLabel, useCommissionPercent } from '../components/MercadoPagoConnect';
 import { useNewOrderAlerts } from '../helpers/useNewOrderAlerts';
 import { unlockAudio } from '../helpers/orderAlerts';
 import type { MenuItem } from '../lib/supabase';
@@ -53,6 +54,8 @@ export function RestaurantDashboard() {
   const [toggling, setToggling] = useState(false);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const { fee: monthlyFee } = useMonthlyFee();
+  const commissionPct = useCommissionPercent();
 
   useEffect(() => {
     if (authLoading) return;
@@ -200,9 +203,10 @@ export function RestaurantDashboard() {
                 </div>
                 <p className="text-xs text-[#666] leading-relaxed">
                   Você terá <strong className="text-[#2D5016]">15 dias grátis</strong> para cadastrar seus produtos e
-                  testar vendas reais. Depois desse período, o uso da plataforma passa a ter uma
-                  <strong className="text-[#2D5016]"> mensalidade única</strong>, com o mesmo valor para todos os
-                  estabelecimentos parceiros — definida pela administração do Floresta Já.
+                  testar vendas reais. Depois desse período, o plano é uma
+                  <strong className="text-[#2D5016]"> mensalidade de R$ {Number(monthlyFee).toFixed(2).replace('.', ',')}</strong> mais
+                  <strong className="text-[#2D5016]"> {pctLabel(commissionPct)} sobre os pedidos pagos pelo app</strong>, separados
+                  automaticamente pelo Mercado Pago. O mesmo plano vale para todos os estabelecimentos.
                 </p>
                 <Link to="/politica-assinatura" target="_blank" className="inline-block text-xs font-semibold text-[#6BA534] hover:text-[#2D5016] hover:underline">
                   Ler a política de uso e assinatura completa →
@@ -216,7 +220,7 @@ export function RestaurantDashboard() {
                   />
                   <span className="text-xs text-[#555] leading-relaxed">
                     Li e estou de acordo com a <strong>política de uso e assinatura</strong>, incluindo o período de
-                    teste de 15 dias e a cobrança de mensalidade após esse prazo.
+                    teste de 15 dias, a mensalidade após esse prazo e a comissão sobre os pedidos pagos pelo app.
                   </span>
                 </label>
               </div>

@@ -1,21 +1,17 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Wallet, CheckCircle2, AlertCircle, Eye, EyeOff, ExternalLink, ChevronRight,
-  Store, User, CreditCard, LifeBuoy, ShieldCheck, ExternalLink as OpenIcon,
+  ArrowLeft, ChevronRight, Store, User, CreditCard, LifeBuoy, ExternalLink as OpenIcon,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
 import { useMyRestaurant } from '../helpers/useRestaurants';
-import { supabase } from '../lib/supabase';
-import { Button } from '../components/Button';
 import { NotificationBell } from '../components/NotificationBell';
 import { OwnerMenu } from '../components/OwnerMenu';
 import { AlertSettings } from '../components/OrderAlerts';
 import { PhoneAppCard } from '../components/PhoneAppCard';
+import { MercadoPagoConnect } from '../components/MercadoPagoConnect';
 import { loadAlertPrefs, saveAlertPrefs, type AlertPrefs } from '../helpers/orderAlerts';
 
-const inputCls = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#2D5016] focus:ring-2 focus:ring-[#2D5016]/10 transition-all font-mono';
 
 function Section({ title, icon, children, right }: { title: string; icon: ReactNode; children: ReactNode; right?: ReactNode }) {
   return (
@@ -46,13 +42,8 @@ function RowLink({ to, icon, title, desc }: { to: string; icon: ReactNode; title
 export function RestaurantSettings() {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { restaurant, isLoading, updateRestaurant } = useMyRestaurant(user?.id ?? null);
+  const { restaurant, isLoading, refetch } = useMyRestaurant(user?.id ?? null);
 
-  const [publicKey, setPublicKey] = useState('');
-  const [token, setToken] = useState('');
-  const [showToken, setShowToken] = useState(false);
-  const [mpConfigured, setMpConfigured] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [prefs, setPrefsState] = useState<AlertPrefs>(loadAlertPrefs);
   const setPrefs = (p: AlertPrefs) => { setPrefsState(p); saveAlertPrefs(p); };
 
@@ -63,41 +54,6 @@ export function RestaurantSettings() {
   }, [user, authLoading, navigate]);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
-  useEffect(() => { setPublicKey(restaurant?.mp_public_key ?? ''); }, [restaurant?.mp_public_key]);
-
-  useEffect(() => {
-    if (!restaurant?.id) return;
-    supabase.rpc('restaurant_mp_token_configured', { p_restaurant_id: restaurant.id })
-      .then(({ data }) => setMpConfigured(data === true));
-  }, [restaurant?.id]);
-
-  const cardReady = !!restaurant?.mp_public_key?.trim();
-
-  async function savePayments(e: React.FormEvent) {
-    e.preventDefault();
-    if (!restaurant) return;
-    const key = publicKey.trim();
-    const tok = token.trim();
-    if (tok && !/^APP_USR-/.test(tok)) { toast.error('O Access Token de produção começa com APP_USR-'); return; }
-    if (key && !/^APP_USR-/.test(key)) { toast.error('A Public Key de produção começa com APP_USR-'); return; }
-    setSaving(true);
-    try {
-      if (key !== (restaurant.mp_public_key ?? '')) await updateRestaurant({ mp_public_key: key || null });
-      if (tok) {
-        const { error } = await supabase.rpc('set_restaurant_mp_token', { p_restaurant_id: restaurant.id, p_token: tok });
-        if (error) throw new Error(`O token não foi salvo: ${error.message}`);
-        setToken('');
-        setShowToken(false);
-        setMpConfigured(true);
-      }
-      toast.success('Pagamentos atualizados!');
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   if (authLoading || !user) return null;
 
   return (
@@ -128,76 +84,7 @@ export function RestaurantSettings() {
         ) : (
           <>
             {/* ── Pagamentos ── */}
-            <Section
-              title="Pagamentos online"
-              icon={<Wallet size={18} className="text-[#6BA534]" />}
-              right={mpConfigured ? (
-                <span className="flex items-center gap-1 text-xs font-semibold text-[#2D5016] bg-[#e8f5e0] px-2.5 py-1 rounded-full">
-                  <CheckCircle2 size={13} /> Conectado
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
-                  <AlertCircle size={13} /> Pendente
-                </span>
-              )}
-            >
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                <div className={`rounded-xl px-3 py-2.5 border ${mpConfigured ? 'border-[#cfe3bd] bg-[#f3f9ec]' : 'border-gray-200'}`}>
-                  <p className="text-xs font-bold text-[#1a1a1a]">Pix</p>
-                  <p className="text-[11px] text-[#888]">{mpConfigured ? 'Recebendo' : 'Precisa do Access Token'}</p>
-                </div>
-                <div className={`rounded-xl px-3 py-2.5 border ${mpConfigured && cardReady ? 'border-[#cfe3bd] bg-[#f3f9ec]' : 'border-gray-200'}`}>
-                  <p className="text-xs font-bold text-[#1a1a1a]">Cartão de crédito</p>
-                  <p className="text-[11px] text-[#888]">{mpConfigured && cardReady ? 'Recebendo' : 'Precisa das duas chaves'}</p>
-                </div>
-              </div>
-
-              <form onSubmit={savePayments} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-[#333] mb-1">Access Token de produção</label>
-                  <div className="relative">
-                    <input
-                      type={showToken ? 'text' : 'password'}
-                      value={token}
-                      onChange={e => setToken(e.target.value)}
-                      autoComplete="off"
-                      placeholder={mpConfigured ? 'Token salvo. Cole um novo só para trocar' : 'APP_USR-...'}
-                      className={`${inputCls} pr-10`}
-                    />
-                    <button type="button" onClick={() => setShowToken(s => !s)} aria-label={showToken ? 'Ocultar' : 'Mostrar'}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aaa] hover:text-[#555]">
-                      {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  <p className="mt-1 text-[11px] text-[#999] flex items-center gap-1">
-                    <ShieldCheck size={12} className="text-[#6BA534]" /> Fica guardado com segurança e nunca é exibido de volta.
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#333] mb-1">Public Key de produção</label>
-                  <input value={publicKey} onChange={e => setPublicKey(e.target.value)} autoComplete="off"
-                    placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className={inputCls} />
-                  <p className="mt-1 text-[11px] text-[#999]">Necessária para o pagamento com cartão dentro do app.</p>
-                </div>
-                <Button type="submit" fullWidth loading={saving}>Salvar chaves</Button>
-              </form>
-
-              <details className="mt-4 group">
-                <summary className="cursor-pointer text-xs font-semibold text-[#2D5016] list-none flex items-center gap-1">
-                  <ChevronRight size={14} className="transition-transform group-open:rotate-90" /> Onde encontro essas chaves?
-                </summary>
-                <ol className="mt-2 text-xs text-[#777] list-decimal list-inside space-y-1 pl-1">
-                  <li>Entre na sua conta do Mercado Pago (CPF ou CNPJ).</li>
-                  <li>Abra o painel de desenvolvedores e crie uma aplicação de "Pagamentos online".</li>
-                  <li>Em <strong>Credenciais de produção</strong>, copie o <strong>Access Token</strong> e a <strong>Public Key</strong> (começam com <code>APP_USR-</code>).</li>
-                  <li>Cole aqui e salve.</li>
-                </ol>
-                <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#2D5016] hover:underline">
-                  <ExternalLink size={13} /> Abrir painel do Mercado Pago
-                </a>
-              </details>
-            </Section>
+            <MercadoPagoConnect restaurant={restaurant} onChanged={refetch} />
 
             {/* ── Alertas ── */}
             <PhoneAppCard userId={user.id} audience="restaurant" />

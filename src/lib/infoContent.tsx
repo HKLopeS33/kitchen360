@@ -176,7 +176,7 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
           <Li>Visibilidade para milhares de clientes locais;</Li>
           <Li>Painel completo para gerenciar cardápio, pedidos e horários de funcionamento;</Li>
           <Li>Recebimento de pagamentos de forma segura e automática via Mercado Pago;</Li>
-          <Li>Sem mensalidade fixa — comece a vender sem complicação.</Li>
+          <Li>Plano simples: mensalidade baixa e uma pequena comissão só sobre os pedidos pagos pelo app — bem menos que os grandes apps de entrega.</Li>
         </ul>
         <SectionTitle>Como se tornar parceiro</SectionTitle>
         <P>
@@ -224,9 +224,10 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
       <>
         <P>
           Para manter o Floresta Já no ar — servidores, suporte, melhorias contínuas e
-          divulgação para novos clientes — cada estabelecimento parceiro contribui com
-          uma <strong>mensalidade única</strong>, com o mesmo valor para todos, definida
-          pela administração da plataforma.
+          divulgação para novos clientes — o plano dos estabelecimentos parceiros tem duas
+          partes: uma <strong>mensalidade fixa</strong> e uma <strong>comissão sobre os pedidos
+          pagos pelo app</strong>. Os valores são os mesmos para todos e aparecem na tela de
+          assinatura do painel.
         </P>
 
         <SectionTitle>Período de teste gratuito (15 dias)</SectionTitle>
@@ -239,10 +240,19 @@ export const INFO_PAGES: Record<string, InfoPageContent> = {
 
         <SectionTitle>Como funciona a mensalidade</SectionTitle>
         <ul>
-          <Li>O valor é <strong>igual para todos os estabelecimentos</strong>, sem planos diferenciados.</Li>
+          <Li>Os valores são <strong>iguais para todos os estabelecimentos</strong>, sem planos diferenciados.</Li>
           <Li>Após o período de teste, a continuidade do acesso à plataforma depende do pagamento da mensalidade vigente.</Li>
           <Li>O pagamento é processado/registrado pela administração da plataforma — em caso de dúvidas sobre como pagar, entre em contato pelo WhatsApp <strong>(87) 99971-0850</strong>.</Li>
           <Li>Estabelecimentos com mensalidade em atraso podem ter o acesso suspenso temporariamente até a regularização.</Li>
+        </ul>
+
+        <SectionTitle>Como funciona a comissão</SectionTitle>
+        <ul>
+          <Li>A comissão incide <strong>somente sobre pedidos pagos pelo app</strong> (Pix ou cartão), sobre o valor total do pedido.</Li>
+          <Li>Ela é <strong>separada automaticamente pelo Mercado Pago</strong> no momento do pagamento: o restante cai direto na conta Mercado Pago do estabelecimento. Não existe boleto nem cobrança posterior.</Li>
+          <Li>Se um pagamento for estornado ou devolvido ao cliente, a comissão daquele pedido também é devolvida.</Li>
+          <Li>As taxas do próprio Mercado Pago (Pix e cartão) seguem as condições da conta do estabelecimento e são independentes da comissão.</Li>
+          <Li>Alterações nos valores são avisadas com antecedência mínima de 30 dias.</Li>
         </ul>
 
         <SectionTitle>O que está incluso</SectionTitle>

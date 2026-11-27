@@ -25,6 +25,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(m => ({ 
 const ResetPassword = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage').then(m => ({ default: m.SubscriptionPage })));
 const SubscriptionStatus = lazy(() => import('./pages/SubscriptionStatus').then(m => ({ default: m.SubscriptionStatus })));
+const MercadoPagoReturn = lazy(() => import('./pages/MercadoPagoReturn').then(m => ({ default: m.MercadoPagoReturn })));
 
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="/restaurantes/:id" element={<RestaurantMenu />} />
             <Route path="/meu-restaurante" element={<RestaurantDashboard />} />
             <Route path="/configuracoes" element={<RestaurantSettings />} />
+            <Route path="/mercadopago/retorno" element={<MercadoPagoReturn />} />
             <Route path="/configuracoes/estabelecimento" element={<RestaurantStoreSettings />} />
             <Route path="/assinatura" element={<SubscriptionPage />} />
             <Route path="/assinatura-status" element={<SubscriptionStatus />} />

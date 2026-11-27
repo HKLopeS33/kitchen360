@@ -145,7 +145,7 @@ export function useAdminSubscriptions() {
 }
 
 export function useMonthlyFee() {
-  const [fee, setFee] = useState<number>(49.9);
+  const [fee, setFee] = useState<number>(49);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchFee = useCallback(async () => {

@@ -55,6 +55,8 @@ export interface Restaurant {
   delivery_time_max: number;
   image_url: string | null;
   mp_public_key?: string | null;
+  mp_oauth_connected?: boolean;
+  mp_connected_at?: string | null;
   subscription_status: 'trial' | 'active' | 'past_due' | 'suspended';
   trial_ends_at: string;
   subscription_active_until: string | null;

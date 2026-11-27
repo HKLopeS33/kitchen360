@@ -26,3 +26,8 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/push/deno.json"
 entrypoint = "./functions/push/index.ts"
+
+[functions.mp-connect]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/mp-connect/index.ts"

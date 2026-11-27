@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../helpers/useAuth';
 import { useMyRestaurant } from '../helpers/useRestaurants';
 import { useMonthlyFee } from '../helpers/useRestaurants';
+import { pctLabel, useCommissionPercent } from '../components/MercadoPagoConnect';
 import { Button } from '../components/Button';
 import { PixPayment, type PixData } from '../components/PixPayment';
 import { CardPaymentForm, type CardFormData } from '../components/CardPaymentForm';
@@ -33,6 +34,7 @@ export function SubscriptionPage() {
   const navigate = useNavigate();
   const { restaurant } = useMyRestaurant(user?.id ?? null);
   const { fee } = useMonthlyFee();
+  const commissionPct = useCommissionPercent();
   const [method, setMethod] = useState<PaymentMethod>('pix');
   const [loading, setLoading] = useState(false);
   const [pix, setPix] = useState<PixData | null>(null);
@@ -237,6 +239,10 @@ export function SubscriptionPage() {
             <div className="flex justify-between items-center py-2.5 border-b border-gray-50">
               <span className="text-[#777]">Valor da mensalidade</span>
               <span className="font-black text-[#2D5016] text-base">R$ {Number(fee).toFixed(2).replace('.', ',')}</span>
+            </div>
+            <div className="flex justify-between items-center gap-3 py-2.5 border-b border-gray-50">
+              <span className="text-[#777]">Comissão por pedido pago pelo app</span>
+              <span className="font-semibold text-[#1a1a1a] text-right">{pctLabel(commissionPct)} <span className="block text-[11px] font-normal text-[#6b7465]">separada pelo Mercado Pago</span></span>
             </div>
             <div className="flex justify-between items-center py-2.5 border-b border-gray-50">
               <span className="text-[#777]">{isTrial ? 'Teste grátis até' : 'Acesso válido até'}</span>

@@ -83,6 +83,7 @@ function brasiliaIso(d: Date) {
 async function createPix(token: string, p: {
   amount: number; description: string; email: string; firstName: string;
   externalRef: string; notificationUrl: string; idempotencyKey: string; extra?: Extra;
+  applicationFee?: number | null;
 }) {
   const res = await fetch('https://api.mercadopago.com/v1/payments', {
     method: 'POST',
@@ -96,6 +97,7 @@ async function createPix(token: string, p: {
       external_reference: p.externalRef,
       notification_url: p.notificationUrl,
       date_of_expiration: brasiliaIso(new Date(Date.now() + PIX_MINUTES * 60 * 1000)),
+      ...(p.applicationFee ? { application_fee: p.applicationFee } : {}),
     }),
   });
   const text = await res.text();
@@ -147,6 +149,7 @@ type CardForm = {
 async function createCardPayment(token: string, card: CardForm, p: {
   amount: number; maxInstallments: number; description: string; email: string;
   externalRef: string; notificationUrl: string; extra?: Extra;
+  applicationFee?: number | null;
 }) {
   if (!card?.token || !card?.payment_method_id) {
     return { status: 'rejected', statusDetail: 'invalid_form', paymentId: null as string | null, amount: 0 };
@@ -173,6 +176,7 @@ async function createCardPayment(token: string, card: CardForm, p: {
       notification_url: p.notificationUrl,
       statement_descriptor: 'FLORESTA JA',
       ...(p.extra ? { additional_info: p.extra.additionalInfo } : {}),
+      ...(p.applicationFee ? { application_fee: p.applicationFee } : {}),
     }),
   });
   const text = await res.text();
@@ -192,6 +196,56 @@ async function createCardPayment(token: string, card: CardForm, p: {
     paymentId: String(pay.id) as string | null,
     amount: Number(pay.transaction_amount),
   };
+}
+
+// ── Comissão do app (split do Mercado Pago) ──
+// Só vale para lojas conectadas pelo botão "Conectar com Mercado Pago" (OAuth):
+// nesse modo o MP separa a comissão e manda direto para a conta do app.
+type Secret = {
+  mp_access_token: string | null; mp_refresh_token: string | null;
+  mp_token_expires_at: string | null; mp_connected_via: string | null;
+};
+
+async function commissionPercent(db: ReturnType<typeof createClient>) {
+  const { data } = await db.from('app_settings').select('value').eq('key', 'commission_percent').maybeSingle();
+  const pct = Number(data?.value);
+  return Number.isFinite(pct) && pct >= 0 && pct <= 20 ? pct : 2.5;
+}
+
+function feeFor(total: number, pct: number) {
+  const fee = Math.round(total * pct) / 100;
+  // Nunca maior que o pedido; abaixo de 1 centavo não cobra.
+  return fee >= 0.01 && fee < total ? Number(fee.toFixed(2)) : null;
+}
+
+/** Renova o token OAuth da loja quando faltam menos de 15 dias para vencer. */
+async function freshToken(db: ReturnType<typeof createClient>, restaurantId: string, s: Secret) {
+  const token = s.mp_access_token?.trim() ?? '';
+  if (s.mp_connected_via !== 'oauth' || !s.mp_refresh_token || !s.mp_token_expires_at) return token;
+  if (new Date(s.mp_token_expires_at).getTime() - Date.now() > 15 * 24 * 3600 * 1000) return token;
+  const CLIENT_ID = Deno.env.get('MP_CLIENT_ID') ?? '';
+  const CLIENT_SECRET = Deno.env.get('MP_CLIENT_SECRET') ?? '';
+  if (!CLIENT_ID || !CLIENT_SECRET) return token;
+  try {
+    const r = await fetch('https://api.mercadopago.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'refresh_token', refresh_token: s.mp_refresh_token }),
+    });
+    if (!r.ok) { console.error('refresh token falhou', r.status); return token; }
+    const t = await r.json();
+    if (!t?.access_token) return token;
+    await db.from('restaurant_secrets').update({
+      mp_access_token: t.access_token,
+      mp_refresh_token: t.refresh_token ?? s.mp_refresh_token,
+      mp_token_expires_at: new Date(Date.now() + (Number(t.expires_in) || 15552000) * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('restaurant_id', restaurantId);
+    return String(t.access_token);
+  } catch (e) {
+    console.error('refresh token erro', e);
+    return token;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -230,11 +284,15 @@ Deno.serve(async (req) => {
 
     const { data: secret } = await supabase
       .from('restaurant_secrets')
-      .select('mp_access_token')
+      .select('mp_access_token, mp_refresh_token, mp_token_expires_at, mp_connected_via')
       .eq('restaurant_id', order.restaurant_id)
       .maybeSingle();
 
-    const mpToken = secret?.mp_access_token?.trim();
+    const mpToken = secret ? await freshToken(supabase, order.restaurant_id, secret as Secret) : '';
+    // Comissão do app: só no modo conectado (OAuth).
+    const applicationFee = (secret as Secret | null)?.mp_connected_via === 'oauth'
+      ? feeFor(Number(order.total), await commissionPercent(supabase))
+      : null;
     if (!mpToken) {
       return ok({
         error: 'Pagamento online indisponível',
@@ -278,12 +336,13 @@ Deno.serve(async (req) => {
         notificationUrl,
         idempotencyKey: key,
         extra,
+        applicationFee,
       });
       if (!pix) {
-        return ok({ error: 'Não foi possível gerar o Pix. O token de pagamento deste restaurante pode estar inválido ou sem chave Pix cadastrada.' });
+        return ok({ error: 'Não foi possível gerar o Pix. A conta Mercado Pago deste estabelecimento pode estar desconectada ou sem chave Pix cadastrada.' });
       }
       // Guarda qual é o Pix atual: o webhook ignora o cancelamento de códigos antigos.
-      await supabase.from('orders').update({ payment_id: pix.paymentId }).eq('id', order.id);
+      await supabase.from('orders').update({ payment_id: pix.paymentId, platform_fee: applicationFee }).eq('id', order.id);
       return ok({ pix });
     }
 
@@ -297,18 +356,19 @@ Deno.serve(async (req) => {
         externalRef: String(order.order_number),
         notificationUrl,
         extra,
+        applicationFee,
       });
 
       if (result.paymentId && result.status === 'approved' && result.amount + 0.01 >= Number(order.total)) {
         // Resposta veio direto do MP com o token do restaurante: pode liberar já.
         await supabase.from('orders')
-          .update({ status: 'pending', payment_status: 'approved', payment_id: result.paymentId })
+          .update({ status: 'pending', payment_status: 'approved', payment_id: result.paymentId, platform_fee: applicationFee })
           .eq('id', order.id)
           .eq('status', 'awaiting_payment');
       } else if (result.paymentId && (result.status === 'in_process' || result.status === 'pending')) {
         // Em análise: a confirmação chega pelo webhook.
         await supabase.from('orders')
-          .update({ payment_status: result.status, payment_id: result.paymentId })
+          .update({ payment_status: result.status, payment_id: result.paymentId, platform_fee: applicationFee })
           .eq('id', order.id)
           .eq('status', 'awaiting_payment');
       }
@@ -333,6 +393,7 @@ Deno.serve(async (req) => {
       external_reference: String(order.order_number),
       notification_url: notificationUrl,
       statement_descriptor: 'FLORESTA JA',
+      ...(applicationFee ? { marketplace_fee: applicationFee } : {}),
     };
 
     if (paymentMethod === 'pix') {
@@ -367,7 +428,7 @@ Deno.serve(async (req) => {
     if (!mpRes.ok) {
       console.error('MP error body:', mpBody.slice(0, 500));
       return ok({
-        error: 'O token de pagamento deste restaurante é inválido ou expirou. Peça ao estabelecimento para revisar o token na aba Dados.',
+        error: 'O token de pagamento deste restaurante é inválido ou expirou. Peça ao estabelecimento para reconectar o Mercado Pago em Configurações.',
       });
     }
 

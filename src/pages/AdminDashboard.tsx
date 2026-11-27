@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Leaf, LogOut, ShieldCheck, CheckCircle2, Ban, RotateCcw, Pencil, Check, X, Clock, Store, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../helpers/useAuth';
+import { AdminCommissionCard } from '../components/AdminCommissionCard';
 import { useAdminSubscriptions, useMonthlyFee } from '../helpers/useRestaurants';
 import { supabase } from '../lib/supabase';
 import type { Restaurant } from '../lib/supabase';
@@ -180,6 +181,9 @@ export function AdminDashboard() {
             </button>
           )}
         </div>
+
+        {/* Comissão por pedido */}
+        <AdminCommissionCard />
 
         {/* Token MP do admin para receber mensalidades */}
         <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
